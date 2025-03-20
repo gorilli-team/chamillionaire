@@ -18,9 +18,18 @@ export default function Home() {
             </p>
           </div>
 
+          <div className="flex flex-col gap-4 sm:flex-row">
+            <Button asChild size="lg">
+              <Link href="/dashboard">Get Started</Link>
+            </Button>
+            <Button variant="outline" size="lg">
+              Learn More
+            </Button>
+          </div>
+
           <div className="rounded-xl bg-card/50 p-8 backdrop-blur-sm">
             <p className="mb-6 text-lg text-card-foreground">
-              🚀 An AI-powered, privacy-first trading assistant that helps users
+              An AI-powered, privacy-first trading assistant that helps users
               analyze market trends, optimize their strategies, and execute
               trades autonomously—all while keeping their data secure with
               Nillion's SecretVault.
@@ -70,13 +79,6 @@ export default function Home() {
               <TechBadge text="AgentKit + Monad" />
               <TechBadge text="Privy" />
             </div>
-          </div>
-
-          <div className="flex flex-col gap-4 sm:flex-row">
-            <Button size="lg">Get Started</Button>
-            <Button variant="outline" size="lg">
-              Learn More
-            </Button>
           </div>
         </main>
       </div>
