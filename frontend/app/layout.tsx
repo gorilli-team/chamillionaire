@@ -4,8 +4,9 @@ import { ThemeProvider } from "../components/theme-provider";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Next.js App",
-  description: "A simple Next.js application",
+  title: "Chamillionaire AI",
+  description:
+    " AI-powered, privacy-first trading assistant that helps users analyze market trends, optimize their strategies, and execute trades autonomously",
 };
 
 export default function RootLayout({
