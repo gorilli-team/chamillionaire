@@ -5,7 +5,7 @@
 ## **Features**
 
 🔹 **AI-Powered Market Insights** – Uses AI models (SecretLLM) to analyze past trades and suggest optimal strategies.  
-🔹 **Automated Trade Execution** – AgentKit executes trades based on predefined rules, working on **Monad and other chains**.  
+🔹 **Automated Trade Execution** – AgentKit executes trades based on predefined rules, working on **Base**.  
 🔹 **Privacy-Preserving Data Storage** – Nillion’s SecretVault ensures that no third party can access or misuse your trade data.  
 🔹 **Secure Wallet Authentication** – Users connect via **Privy**, ensuring seamless, non-custodial access.  
 🔹 **Customizable Trading Strategies** – Define risk parameters, stop-loss levels, and dollar-cost averaging (DCA) strategies.  
@@ -17,7 +17,7 @@
 - **Backend**: Node.js
 - **Storage**: Nillion SecretVault
 - **AI Processing**: SecretLLM (Private OpenAI environment)
-- **Blockchain Execution**: AgentKit + Monad
+- **Blockchain Execution**: AgentKit + Base
 - **Authentication**: Privy
 
 ## **Getting Started**
@@ -37,7 +37,7 @@
 
 3. **Set Up Environment Variables**
 
-   - Create a `.env` file and add your API keys for Privy, Nillion, and Monad.
+   - Create a `.env` file and add your API keys for Privy, Nillion.
 
 4. **Run the Development Server**
    ```bash
@@ -48,7 +48,6 @@
 
 ✅ MVP with trade logging, AI analysis, and private storage.  
 🔜 Automated trade execution via AgentKit.  
-🔜 Multi-chain support beyond Monad.  
 🔜 Advanced AI-driven risk management.
 
 ## **Contributing**

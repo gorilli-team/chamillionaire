@@ -43,7 +43,7 @@ export default function Home() {
               />
               <FeatureCard
                 title="Automated Trading"
-                description="AgentKit executes trades based on predefined rules, working on Monad and other chains"
+                description="AgentKit executes trades based on predefined rules, working on Base"
                 emoji="🔹"
               />
               <FeatureCard
@@ -76,7 +76,7 @@ export default function Home() {
               <TechBadge text="Node.js" />
               <TechBadge text="Nillion SecretVault" />
               <TechBadge text="SecretLLM" />
-              <TechBadge text="AgentKit + Monad" />
+              <TechBadge text="AgentKit" />
               <TechBadge text="Privy" />
             </div>
           </div>
@@ -99,7 +99,7 @@ function FeatureCard({
   emoji: string;
 }) {
   return (
-    <div className="rounded-lg bg-card p-6 shadow-sm transition-colors hover:bg-card/80">
+    <div className="rounded-lg bg-card p-6 border border-black shadow-sm transition-colors hover:bg-card/80">
       <div className="mb-2 text-2xl">{emoji}</div>
       <h3 className="mb-2 text-lg font-semibold">{title}</h3>
       <p className="text-sm text-muted-foreground">{description}</p>
@@ -109,7 +109,7 @@ function FeatureCard({
 
 function TechBadge({ text }: { text: string }) {
   return (
-    <span className="rounded-full bg-primary/10 px-4 py-1 text-sm font-medium text-primary">
+    <span className="rounded-full bg-primary/10 border border-black px-4 py-1 text-sm font-medium text-primary">
       {text}
     </span>
   );
