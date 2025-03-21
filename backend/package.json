@@ -18,6 +18,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "axios": "^1.8.4",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "ethers": "^6.13.5",
