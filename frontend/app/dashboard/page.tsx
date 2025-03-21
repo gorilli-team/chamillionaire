@@ -215,73 +215,68 @@ export default function DashboardPage() {
 
   return (
     <BaseLayout>
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-3xl font-bold">Your Base Assets</h1>
-          <p className="text-muted-foreground">
-            Here's an overview of your Base assets
-          </p>
+      <div className="space-y-8 w-full px-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">
+              Your Base Assets
+            </h1>
+            <p className="text-black/50 mt-1">
+              Here's an overview of your Base assets
+            </p>
+          </div>
+          <div className="bg-black/5 backdrop-blur-sm px-4 py-1 rounded-full">
+            <span className="text-sm font-medium">Base Network</span>
+          </div>
         </div>
 
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Balance"
             value={`$${totalBalance}`}
-            // change="+2.5%"
-            // trend="up"
+            className="border-2 border-black/5 hover:border-black/10 transition-all"
           />
-          {/* <StatCard
-            title="24h Volume"
-            value="$12,234.00"
-            // change="-0.8%"
-            // trend="down"
-          /> */}
-          {/* <StatCard
-            title="Active Trades"
-            value="8"
-            // change="+1"
-            // trend="up"
-          /> */}
-          {/* <StatCard
-            title="Success Rate"
-            value="92%"
-            // change="+2.3%"
-            // trend="up"
-          /> */}
         </div>
 
         {/* Assets section */}
         <div className="space-y-4">
-          <h2 className="text-xl font-bold">Your Base Assets</h2>
-
           {!ready ? (
-            <p>Loading Privy...</p>
+            <div className="min-h-[400px] flex items-center justify-center bg-black/5 rounded-2xl backdrop-blur-sm border-2 border-black/5">
+              <div className="animate-pulse">Loading Privy...</div>
+            </div>
           ) : !authenticated ? (
-            <div className="bg-card p-6 rounded-xl">
-              <p>Please connect your wallet to view your assets</p>
+            <div className="min-h-[400px] flex items-center justify-center bg-black/5 rounded-2xl backdrop-blur-sm border-2 border-black/5">
+              <p className="text-lg font-medium">
+                Please connect your wallet to view your assets
+              </p>
             </div>
           ) : loading ? (
-            <div className="bg-card p-6 rounded-xl">
-              <p>Loading your assets...</p>
+            <div className="min-h-[400px] flex items-center justify-center bg-black/5 rounded-2xl backdrop-blur-sm border-2 border-black/5">
+              <div className="animate-pulse">Loading your assets...</div>
             </div>
           ) : error ? (
-            <div className="bg-card p-6 rounded-xl">
-              <p className="text-red-500">{error}</p>
+            <div className="min-h-[400px] flex items-center justify-center bg-black/5 rounded-2xl backdrop-blur-sm border-2 border-black/5">
+              <p className="text-red-500 font-medium">{error}</p>
             </div>
           ) : assets.length === 0 ? (
-            <div className="bg-card p-6 rounded-xl">
-              <p>No assets found on Base blockchain</p>
+            <div className="min-h-[400px] flex items-center justify-center bg-black/5 rounded-2xl backdrop-blur-sm border-2 border-black/5">
+              <p className="text-lg font-medium">
+                No assets found on Base blockchain
+              </p>
             </div>
           ) : (
-            <div className="bg-card p-6 rounded-xl">
-              <div className="grid grid-cols-4 font-medium text-sm text-muted-foreground pb-2 border-b">
+            <div className="bg-white/50 backdrop-blur-xl shadow-xl rounded-2xl border-2 border-black/5 hover:border-black/10 transition-all">
+              <div
+                className="grid text-sm font-medium text-black/70 p-6 border-b-2 border-black/5"
+                style={{ gridTemplateColumns: "30% 20% 25% 25%" }}
+              >
                 <div>Asset</div>
                 <div className="text-right">Balance</div>
                 <div className="text-right">Price</div>
                 <div className="text-right">Value</div>
               </div>
 
-              <div className="space-y-3 mt-3">
+              <div className="divide-y-2 divide-black/5">
                 {assets.map((asset) => (
                   <AssetRow key={asset.address} asset={asset} />
                 ))}
@@ -296,20 +291,25 @@ export default function DashboardPage() {
 
 function AssetRow({ asset }: { asset: Asset }) {
   return (
-    <div className="grid grid-cols-4 py-2">
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+    <div
+      className="grid p-6 hover:bg-black/[0.02] transition-colors"
+      style={{ gridTemplateColumns: "30% 20% 25% 25%" }}
+    >
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-black/5 rounded-full flex items-center justify-center font-medium">
           {asset.symbol.charAt(0)}
         </div>
         <div>
           <p className="font-medium">{asset.symbol}</p>
-          <p className="text-xs text-muted-foreground">{asset.name}</p>
+          <p className="text-sm text-black/50">{asset.name}</p>
         </div>
       </div>
-      <div className="text-right self-center">
+      <div className="text-right self-center font-mono">
         {parseFloat(asset.balance).toFixed(6)}
       </div>
-      <div className="text-right self-center">${asset.price.toFixed(2)}</div>
+      <div className="text-right self-center font-mono">
+        ${asset.price.toFixed(2)}
+      </div>
       <div className="text-right self-center font-medium">
         ${asset.value.toFixed(2)}
       </div>
@@ -320,23 +320,19 @@ function AssetRow({ asset }: { asset: Asset }) {
 interface StatCardProps {
   title: string;
   value: string;
-  // change: string;
-  // trend: "up" | "down";
+  className?: string;
 }
 
-function StatCard({ title, value }: StatCardProps) {
+function StatCard({ title, value, className }: StatCardProps) {
   return (
-    <div className="rounded-xl bg-card p-6">
-      <p className="text-sm text-muted-foreground">{title}</p>
+    <div
+      className={cn(
+        "bg-white/50 backdrop-blur-xl shadow-sm rounded-2xl p-6 hover:bg-white/60 transition-all",
+        className
+      )}
+    >
+      <p className="text-sm text-black/50">{title}</p>
       <p className="mt-2 text-2xl font-bold">{value}</p>
-      {/* <p
-        className={cn(
-          "mt-1 text-sm",
-          trend === "up" ? "text-green-500" : "text-red-500"
-        )}
-      >
-        {change}
-      </p> */}
     </div>
   );
 }
