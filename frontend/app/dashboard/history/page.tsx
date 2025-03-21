@@ -292,8 +292,10 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-bold tracking-tight">
               Transaction History
             </h2>
-            <div className="bg-black/5 backdrop-blur-sm px-4 py-1 rounded-full">
-              <span className="text-sm font-medium">Base Network</span>
+            <div className="bg-[rgb(0,82,255)] backdrop-blur-sm px-4 py-1 rounded-full">
+              <span className="text-sm font-semibold text-white">
+                Base Network
+              </span>
             </div>
           </div>
 
