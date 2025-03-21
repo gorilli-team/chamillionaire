@@ -2,12 +2,14 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface ITokenPrice extends Document {
   symbol: string;
-  name: string;
+  // name: string;
   currentPrice: number;
-  priceChange24h: number;
-  volume24h: number;
-  marketCap: number;
-  lastUpdated: Date;
+  priceChange1h: number;
+  // volume24h: number;
+  // marketCap: number;
+  // lastUpdated: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const TokenPriceSchema: Schema = new Schema(
@@ -23,7 +25,7 @@ const TokenPriceSchema: Schema = new Schema(
       required: true,
       min: 0,
     },
-    priceChange24h: {
+    priceChange1h: {
       type: Number,
       required: true,
     },
@@ -39,7 +41,7 @@ const TokenPriceSchema: Schema = new Schema(
     // },
   },
   {
-    timestamps: true, // Adds createdAt and updatedAt timestamps
+    timestamps: true,
   }
 );
 

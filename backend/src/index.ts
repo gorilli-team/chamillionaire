@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import tokenPriceRoutes from "./routes/tokenPrices";
+import "./crons/prices";
 
 // Load environment variables
 dotenv.config();
