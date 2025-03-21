@@ -236,20 +236,20 @@ export default function DashboardPage() {
         setLoading(false);
         return;
       }
-  
+
       try {
         setLoading(true);
-  
+
         const API_KEY = process.env.NEXT_PUBLIC_BASESCAN_API_KEY;
         const BASESCAN_URL = `https://api.basescan.org/api?module=account&action=txlist&address=${walletAddress}&startblock=0&endblock=99999999&sort=desc&apikey=${API_KEY}`;
-  
+
         const response = await fetch(BASESCAN_URL);
         const data = await response.json();
-  
+
         if (data.status !== "1") {
           throw new Error(data.message || "Failed to fetch transactions");
         }
-  
+
         const formattedTxs = data.result.map((tx: any) => ({
           hash: tx.hash,
           from: tx.from,
@@ -257,14 +257,14 @@ export default function DashboardPage() {
           value: ethers.formatEther(tx.value),
           timestamp: parseInt(tx.timeStamp, 10) * 1000, // Convert Unix timestamp to milliseconds
         }));
-  
+
         console.log("Formatted Transactions:", formattedTxs);
-  
+
         // Update transactions state
         setTransactions((prev) =>
           currentPage === 1 ? formattedTxs : [...prev, ...formattedTxs]
         );
-  
+
         setHasMore(formattedTxs.length === ITEMS_PER_PAGE);
         setLoading(false);
       } catch (err) {
@@ -275,10 +275,9 @@ export default function DashboardPage() {
         setLoading(false);
       }
     };
-  
+
     fetchTransactions();
   }, [walletAddress, authenticated, ready, currentPage]);
-  
 
   const loadMore = () => {
     setCurrentPage((prev) => prev + 1);
@@ -286,82 +285,113 @@ export default function DashboardPage() {
 
   return (
     <BaseLayout>
-      <div className="space-y-8">
+      <div className="space-y-8 w-full px-6">
         {/* Transaction history section */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-bold">Transaction History</h2>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold tracking-tight">
+              Transaction History
+            </h2>
+            <div className="bg-black/5 backdrop-blur-sm px-4 py-1 rounded-full">
+              <span className="text-sm font-medium">Base Network</span>
+            </div>
+          </div>
 
           {!ready ? (
-            <p>Loading Privy...</p>
+            <div className="min-h-[400px] flex items-center justify-center bg-black/5 rounded-2xl backdrop-blur-sm">
+              <div className="animate-pulse">Loading Privy...</div>
+            </div>
           ) : !authenticated ? (
-            <div className="bg-card p-6 rounded-xl">
-              <p>Please connect your wallet to view your transaction history</p>
+            <div className="min-h-[400px] flex items-center justify-center bg-black/5 rounded-2xl backdrop-blur-sm">
+              <p className="text-lg font-medium">
+                Please connect your wallet to view your transaction history
+              </p>
             </div>
           ) : loading && transactions.length === 0 ? (
-            <div className="bg-card p-6 rounded-xl">
-              <p>Loading your transactions...</p>
+            <div className="min-h-[400px] flex items-center justify-center bg-black/5 rounded-2xl backdrop-blur-sm">
+              <div className="animate-pulse">Loading your transactions...</div>
             </div>
           ) : error ? (
-            <div className="bg-card p-6 rounded-xl">
-              <p className="text-red-500">{error}</p>
+            <div className="min-h-[400px] flex items-center justify-center bg-black/5 rounded-2xl backdrop-blur-sm">
+              <p className="text-red-500 font-medium">{error}</p>
             </div>
           ) : transactions.length === 0 ? (
-            <div className="bg-card p-6 rounded-xl">
-              <p>No transactions found</p>
+            <div className="min-h-[400px] flex items-center justify-center bg-black/5 rounded-2xl backdrop-blur-sm">
+              <p className="text-lg font-medium">No transactions found</p>
             </div>
           ) : (
-            <div className="bg-card p-6 rounded-xl">
-              <div className="grid grid-cols-4 font-medium text-sm text-muted-foreground pb-2 border-b">
+            <div className="bg-white/50 backdrop-blur-xl shadow-xl rounded-2xl border border-black/5">
+              <div
+                className="grid text-sm font-medium text-black/70 p-6 border-b border-black/5"
+                style={{ gridTemplateColumns: "25% 30% 15% 20% 10%" }}
+              >
                 <div>Transaction</div>
                 <div>From/To</div>
                 <div className="text-right">Amount (ETH)</div>
                 <div className="text-right">Time</div>
+                <div className="text-right">Link</div>
               </div>
 
-              <div className="space-y-3 mt-3">
+              <div className="divide-y divide-black/5">
                 {transactions.map((tx) => (
-                  <div key={tx.hash} className="grid grid-cols-4 py-2">
-                    <div className="flex items-center">
+                  <div
+                    key={tx.hash}
+                    className="grid p-6 hover:bg-black/[0.02] transition-colors"
+                    style={{ gridTemplateColumns: "25% 30% 15% 20% 10%" }}
+                  >
+                    <div className="flex items-center pr-4">
+                      <span className="font-mono text-black/70 truncate">
+                        {tx.hash.slice(0, 8)}...{tx.hash.slice(-6)}
+                      </span>
+                    </div>
+                    <div className="font-mono truncate pr-4">
+                      {tx.from.toLowerCase() === walletAddress ? (
+                        <div className="flex items-center space-x-2">
+                          <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>
+                          <span className="truncate">
+                            To: {tx.to.slice(0, 8)}...{tx.to.slice(-6)}
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-2">
+                          <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></span>
+                          <span className="truncate">
+                            From: {tx.from.slice(0, 8)}...{tx.from.slice(-6)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right font-mono">
+                      {parseFloat(tx.value).toFixed(6)}
+                    </div>
+                    <div className="text-right text-black/50 font-medium">
+                      {formatDistanceToNow(tx.timestamp, {
+                        addSuffix: true,
+                      })}
+                    </div>
+                    <div className="text-right">
                       <a
                         href={`${BASE_SCAN_URL}/tx/${tx.hash}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-primary hover:underline truncate"
+                        className="text-black/70 hover:text-black transition-colors"
                       >
-                        {tx.hash.slice(0, 8)}...{tx.hash.slice(-6)}
+                        View →
                       </a>
-                    </div>
-                    <div className="truncate">
-                      {tx.from.toLowerCase() === walletAddress ? (
-                        <span className="text-red-500">
-                          To: {tx.to.slice(0, 8)}...{tx.to.slice(-6)}
-                        </span>
-                      ) : (
-                        <span className="text-green-500">
-                          From: {tx.from.slice(0, 8)}...{tx.from.slice(-6)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-right">
-                      {parseFloat(tx.value).toFixed(6)}
-                    </div>
-                    <div className="text-right text-muted-foreground">
-                      {formatDistanceToNow(tx.timestamp * 1000, {
-                        addSuffix: true,
-                      })}
                     </div>
                   </div>
                 ))}
               </div>
 
               {hasMore && (
-                <div className="mt-6 text-center">
+                <div className="p-6 text-center border-t border-black/5">
                   <Button
                     onClick={loadMore}
                     disabled={loading}
                     variant="outline"
+                    className="bg-black text-white hover:bg-black/90 transition-colors px-8"
                   >
-                    {loading ? "Loading..." : "Load More"}
+                    {loading ? "Loading..." : "Load More Transactions"}
                   </Button>
                 </div>
               )}
