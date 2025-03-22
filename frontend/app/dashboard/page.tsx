@@ -76,6 +76,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalBalance, setTotalBalance] = useState("0.00");
+  const [hasVault, setHasVault] = useState(false);
 
   useEffect(() => {
     const fetchBaseAssets = async () => {
@@ -239,6 +240,61 @@ export default function DashboardPage() {
             value={`$${totalBalance}`}
             className="border-2 border-black/5 hover:border-black/10 transition-all"
           />
+          {/* check if user has a vault, if not, show a button to create a vault */}
+          {!hasVault ? (
+            <div className="bg-white/50 backdrop-blur-xl shadow-sm rounded-2xl p-6 hover:bg-white/60 transition-all border-2 border-black/5 hover:border-black/10 flex items-center">
+              <div className="flex flex-col gap-2">
+                <p className="text-sm text-black/50">
+                  Create a vault to start managing your assets.
+                </p>
+
+                <button
+                  className="bg-[rgb(0,82,255)] text-white px-4 py-2 rounded-lg font-medium hover:bg-[rgb(0,82,255)]/90 shadow-md shadow-[rgb(0,82,255)]/10 backdrop-blur-xl transition-all flex items-center gap-1.5 text-sm"
+                  onClick={() => {
+                    // TODO: Implement vault creation
+                  }}
+                >
+                  Create Vault
+                  <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="opacity-80"
+                  >
+                    <path
+                      d="M12 4.5C16.1421 4.5 19.5 7.85786 19.5 12C19.5 16.1421 16.1421 19.5 12 19.5C7.85786 19.5 4.5 16.1421 4.5 12C4.5 7.85786 7.85786 4.5 12 4.5Z"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M12 8V16"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path
+                      d="M8 12H16"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <StatCard
+              title="Vault"
+              value={`$${totalBalance}`}
+              className="border-2 border-black/5 hover:border-black/10 transition-all"
+            />
+          )}
         </div>
 
         {/* Assets section */}
