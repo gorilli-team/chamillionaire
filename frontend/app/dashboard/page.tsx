@@ -84,6 +84,7 @@ interface Asset {
   type: "native" | "erc20";
   price: number;
   value: number;
+  decimals?: number;
 }
 
 function DepositDialog({
@@ -99,7 +100,33 @@ function DepositDialog({
   asset: Asset;
   maxAmount: string;
 }) {
-  const [amount, setAmount] = useState(maxAmount);
+  const [amount, setAmount] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setAmount(value);
+
+    if (Number(value) > Number(maxAmount)) {
+      setError("Amount exceeds balance");
+    } else if (Number(value) <= 0) {
+      setError("Amount must be greater than 0");
+    } else {
+      setError(null);
+    }
+  };
+
+  const handleConfirm = () => {
+    if (
+      error ||
+      !amount ||
+      Number(amount) <= 0 ||
+      Number(amount) > Number(maxAmount)
+    ) {
+      return;
+    }
+    onConfirm(amount);
+  };
 
   if (!isOpen) return null;
 
@@ -118,22 +145,28 @@ function DepositDialog({
               <input
                 type="number"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                max={maxAmount}
+                onChange={handleAmountChange}
+                placeholder="0.0"
                 min="0"
-                step="0.000001"
+                step="any"
                 className="w-full p-2 border-2 border-black/10 rounded-lg bg-white"
               />
               <button
-                onClick={() => setAmount(maxAmount)}
+                onClick={() => {
+                  setAmount(maxAmount);
+                  setError(null);
+                }}
                 className="absolute right-2 top-2 text-sm text-blue-500 hover:text-blue-600"
               >
                 Max
               </button>
             </div>
-            <p className="text-sm text-black/50">
-              Max: {maxAmount} {asset.symbol}
-            </p>
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-black/50">
+                Max: {maxAmount} {asset.symbol}
+              </p>
+              {error && <p className="text-sm text-red-500">{error}</p>}
+            </div>
           </div>
           <div className="flex gap-2 justify-end">
             <button
@@ -143,8 +176,9 @@ function DepositDialog({
               Cancel
             </button>
             <button
-              onClick={() => onConfirm(amount)}
-              className="px-4 py-2 text-sm font-medium bg-green-500 text-white rounded hover:bg-green-600"
+              onClick={handleConfirm}
+              disabled={!!error || !amount || Number(amount) <= 0}
+              className="px-4 py-2 text-sm font-medium bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Confirm Deposit
             </button>
@@ -277,6 +311,7 @@ export default function DashboardPage() {
               type: "erc20",
               price: tokenPrice,
               value: tokenValue,
+              decimals: decimals,
             });
           }
         } catch (tokenError) {
@@ -380,7 +415,8 @@ export default function DashboardPage() {
 
       // First approve the vault to spend tokens
       const tokenContract = new Contract(asset.address, ERC20_ABI, signer);
-      const amount = ethers.parseUnits(depositAmount, 18); // Assuming 18 decimals, should be dynamic in production
+      const decimals = asset.decimals || 18;
+      const amount = ethers.parseUnits(depositAmount, decimals);
 
       const approveTx = await tokenContract.approve(vaultAddress, amount);
       await approveTx.wait();
