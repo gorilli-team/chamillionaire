@@ -6,6 +6,8 @@ import { cn } from "../../lib/utils";
 import { usePrivy } from "@privy-io/react-auth";
 import { ethers } from "ethers";
 import { BrowserProvider, Contract } from "ethers";
+import { useVoice } from "../../components/voice/useVoice";
+import { SpeakingDialog } from "../../components/voice/SpeakingDialog";
 
 // Standard ERC20 ABI (only the functions we need)
 const ERC20_ABI = [
@@ -307,9 +309,8 @@ export default function DashboardPage() {
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [isDepositDialogOpen, setIsDepositDialogOpen] = useState(false);
   const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [highlightedIndex, setHighlightedIndex] = useState(0);
-  const [currentMessage, setCurrentMessage] = useState("");
+
+  const { isSpeaking, currentMessage, speak, stopSpeaking } = useVoice();
 
   const fetchBaseAssets = async () => {
     if (!ready || !authenticated || !user?.wallet?.address) {
@@ -630,93 +631,11 @@ export default function DashboardPage() {
     return `[${timeString}] ETH is up 5% since your last visit, setting up a long entry based on the momentum indicators.`;
   };
 
-  const speak = (text: string) => {
-    setCurrentMessage(text);
-    setIsSpeaking(true);
-    setHighlightedIndex(0);
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "en-US";
-    const voices = speechSynthesis.getVoices();
-    const englishVoice =
-      voices.find(
-        (voice) => voice.lang.includes("en") && voice.name.includes("Google")
-      ) || voices.find((voice) => voice.lang.includes("en"));
-    utterance.voice = englishVoice || null;
-
-    // Track word progress
-    utterance.onboundary = (event) => {
-      if (event.name === "word") {
-        setHighlightedIndex(event.charIndex);
-      }
-    };
-
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      setHighlightedIndex(text.length);
-    };
-
-    speechSynthesis.speak(utterance);
-  };
-
   useEffect(() => {
-    speak(getUpdateMessage());
-  }, []);
-
-  // Speaking Dialog Component
-  const SpeakingDialog = () => {
-    if (!isSpeaking && !currentMessage) return null;
-
-    const beforeHighlight = currentMessage.slice(0, highlightedIndex);
-    const highlighted = currentMessage.slice(
-      highlightedIndex,
-      highlightedIndex + 1
-    );
-    const afterHighlight = currentMessage.slice(highlightedIndex + 1);
-
-    const handleClose = () => {
-      setIsSpeaking(false);
-      setCurrentMessage("");
-      speechSynthesis.cancel(); // Stop any ongoing speech
-    };
-
-    return (
-      <div className="fixed bottom-8 right-8 max-w-md w-full bg-white rounded-xl shadow-2xl p-6 border border-black/10">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold">
-            🦎
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-sm text-black/70 mb-2">
-              AI Assistant Update
-            </h3>
-            <p className="text-sm leading-relaxed">
-              <span className="text-black/60">{beforeHighlight}</span>
-              <span className="bg-indigo-500 text-white px-0.5 rounded">
-                {highlighted}
-              </span>
-              <span className="text-black/60">{afterHighlight}</span>
-            </p>
-          </div>
-          <button
-            onClick={handleClose}
-            className="text-black/40 hover:text-black/60"
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M18 6L6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    );
-  };
+    if (authenticated) {
+      speak(getUpdateMessage());
+    }
+  }, [authenticated]);
 
   return (
     <BaseLayout>
@@ -970,7 +889,13 @@ export default function DashboardPage() {
           </>
         )}
       </div>
-      <SpeakingDialog />
+      {authenticated && (
+        <SpeakingDialog
+          isSpeaking={isSpeaking}
+          currentMessage={currentMessage}
+          onClose={stopSpeaking}
+        />
+      )}
     </BaseLayout>
   );
 }
