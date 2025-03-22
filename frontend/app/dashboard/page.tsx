@@ -297,7 +297,6 @@ export default function DashboardPage() {
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [totalBalance, setTotalBalance] = useState("0.00");
   const [walletBalance, setWalletBalance] = useState("0.00");
   const [totalVaultBalance, setTotalVaultBalance] = useState("0.00");
   const [hasVault, setHasVault] = useState(false);
@@ -820,7 +819,7 @@ export default function DashboardPage() {
                       ${asset.value.toFixed(2)}
                     </div>
                     <div className="flex justify-end self-center">
-                      {asset.type === "erc20" && (
+                      {asset.type === "erc20" && asset.balance !== "0.0" && (
                         <button
                           onClick={() => handleDepositClick(asset)}
                           disabled={isDepositing || !hasVault}
@@ -831,15 +830,17 @@ export default function DashboardPage() {
                       )}
                     </div>
                     <div className="flex justify-end self-center">
-                      {asset.type === "erc20" && (
-                        <button
-                          onClick={() => handleWithdrawClick(asset)}
-                          disabled={isWithdrawing || !hasVault}
-                          className="bg-red-500 text-white px-3 py-1 rounded text-sm font-medium hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isWithdrawing ? "Withdrawing..." : "Withdraw"}
-                        </button>
-                      )}
+                      {asset.type === "erc20" &&
+                        asset.vaultBalance &&
+                        asset.vaultBalance !== "0.0" && (
+                          <button
+                            onClick={() => handleWithdrawClick(asset)}
+                            disabled={isWithdrawing || !hasVault}
+                            className="bg-red-500 text-white px-3 py-1 rounded text-sm font-medium hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isWithdrawing ? "Withdrawing..." : "Withdraw "}
+                          </button>
+                        )}
                     </div>
                   </div>
                 ))}
