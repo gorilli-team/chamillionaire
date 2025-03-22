@@ -33,6 +33,14 @@ export function Header({ className }: HeaderProps) {
 
   const isConnectedToBase = activeWallet?.chainId === BASE_CHAIN_ID;
 
+  const signIn = async () => {
+    await login();
+    await fetch("/api/users/signin", {
+      method: "POST",
+      body: JSON.stringify({ address: activeWallet?.address }),
+    });
+  };
+
   // Function to switch to Base network
   const switchToBase = async () => {
     if (!activeWallet || isConnectedToBase) {
@@ -224,7 +232,7 @@ export function Header({ className }: HeaderProps) {
             </div>
           </>
         ) : (
-          <Button onClick={login} disabled={!ready} size="sm">
+          <Button onClick={signIn} disabled={!ready} size="sm">
             Connect Wallet
           </Button>
         )}
