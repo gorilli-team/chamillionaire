@@ -57,7 +57,3 @@ We welcome contributions! Feel free to open issues, suggest features, or submit 
 ## **License**
 
 This project is licensed under the MIT License.
-
----
-
-Would you like me to draft an initial README.md file for this? 🚀
