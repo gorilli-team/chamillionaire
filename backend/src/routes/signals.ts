@@ -6,6 +6,20 @@ const router = express.Router();
 router.post("/", async (req, res) => {
   const { signal, symbol, quantity, confidenceScore, eventId, motivation } =
     req.body;
+
+  if (
+    !signal ||
+    !symbol ||
+    !quantity ||
+    !confidenceScore ||
+    !eventId ||
+    !motivation
+  ) {
+    return res.status(400).json({ message: "Missing required fields" });
+  }
+
+  console.log("Received signal:", req.body);
+
   const signalData = new SignalData({
     signal,
     symbol,

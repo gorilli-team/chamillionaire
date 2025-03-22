@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import tokenPriceRoutes from "./routes/tokenPrices";
+import signalRoutes from "./routes/signals";
 import "./crons/prices";
 
 // Load environment variables
@@ -17,6 +18,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api/token-prices", tokenPriceRoutes);
+app.use("/api/signals", signalRoutes);
 
 // Basic route
 app.get("/", (req, res) => {

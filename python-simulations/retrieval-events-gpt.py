@@ -130,9 +130,61 @@ print(final_response)
 # Step 6: Save the response to the database
 # --------------------------------------------------------------
 
+def save_to_database(signal_data):
+    """
+    Save the generated trading signal to the database via API.
+    
+    Args:
+        signal_data: The GeneratedSignal object to save
+    
+    Returns:
+        dict: Response from the API
+    """
+    try:
+        # Convert Pydantic model to dict
+        if isinstance(signal_data, BaseModel):
+            # Convert to dict and transform keys to match API expectations
+            signal_dict = {
+                "signal": signal_data.signal,
+                "symbol": signal_data.symbol,
+                "quantity": signal_data.quantity,
+                "confidenceScore": signal_data.confidence_score,  # camelCase in API
+                "eventId": signal_data.event_id,                  # camelCase in API
+                "motivation": signal_data.motivation
+            }
+        else:
+            # Handle dict input and ensure keys match API expectations
+            signal_dict = {
+                "signal": signal_data.get("signal"),
+                "symbol": signal_data.get("symbol"),
+                "quantity": signal_data.get("quantity"),
+                "confidenceScore": signal_data.get("confidence_score"),  # transform to camelCase
+                "eventId": signal_data.get("event_id"),                  # transform to camelCase
+                "motivation": signal_data.get("motivation")
+            }
+            
+        # Make POST request to backend API (correct endpoint from your code)
+        response = requests.post(
+            f"{backend_url}/api/signals",
+            json=signal_dict,
+            headers={"Content-Type": "application/json"}
+        )
+        
+        response.raise_for_status()
+        
+        return {
+            "success": True,
+            "message": "Trading signal saved successfully",
+            "data": response.json()
+        }
+    except requests.RequestException as e:
+        error_message = f"Failed to save trading signal: {str(e)}"
+        print(error_message)
+        return {
+            "success": False,
+            "message": error_message
+        }
 
-
-
-
-
-
+# Save the generated signal to the database
+save_result = save_to_database(final_response)
+print(f"Database save result: {save_result}")
