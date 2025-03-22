@@ -432,6 +432,7 @@ export default function DashboardPage() {
               vaultBalance,
               decimals
             );
+
             const vaultTokenValue = parseFloat(vaultTokenBalance) * tokenPrice;
             console.log(`${token.symbol} vault stats:`, {
               balance: vaultTokenBalance,
@@ -780,7 +781,7 @@ export default function DashboardPage() {
                 <div className="text-right">Balance in Wallet</div>
                 <div className="text-right">Balance in AI Vault</div>
                 <div className="text-right">Price</div>
-                <div className="text-right">Value</div>
+                <div className="text-right">Total Value</div>
                 <div className="text-right">Deposit</div>
                 <div className="text-right">Withdraw</div>
               </div>
@@ -816,7 +817,12 @@ export default function DashboardPage() {
                       ${asset.price.toFixed(2)}
                     </div>
                     <div className="text-right self-center font-mono">
-                      ${asset.value.toFixed(2)}
+                      $
+                      {(
+                        (parseFloat(asset.balance) +
+                          parseFloat(asset.vaultBalance || "0")) *
+                        asset.price
+                      ).toFixed(2)}
                     </div>
                     <div className="flex justify-end self-center">
                       {asset.type === "erc20" && asset.balance !== "0.0" && (
