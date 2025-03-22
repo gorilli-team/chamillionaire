@@ -106,7 +106,7 @@ for tool_call in completion.choices[0].message.tool_calls:
 class GeneratedSignal(BaseModel):
     signal: str = Field(description="Either BUY or SELL.")
     symbol: str = Field(description="The symbol of the token to buy or sell.")
-    quantity: float = Field(description="The quantity of the token to buy or sell.")
+    quantity: float = Field(description="The percentage of the user's portfolio to invest in the token.")
     confidence_score: float = Field(description="A coefficient from 0 to 1 that represents the confidence you have that the signal will generate a positive return for the user.")
     event_id: int = Field(description="The event id of the event chosen as the source for the generated signal")
     motivation: str = Field(description="A brief explanation of the signal.")
