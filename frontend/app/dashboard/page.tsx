@@ -13,6 +13,7 @@ const ERC20_ABI = [
   "function decimals() view returns (uint8)",
   "function symbol() view returns (string)",
   "function name() view returns (string)",
+  "function approve(address spender, uint256 amount) returns (bool)",
 ];
 
 // Chainlink Price Feed ABI
@@ -69,6 +70,12 @@ const VAULT_FACTORY_ABI = [
 
 const VAULT_FACTORY_ADDRESS = "0x7f9476fB4d637045dF62fdC27230fD9784D11Ad2";
 
+// Add Vault ABI
+const VAULT_ABI = [
+  "function deposit(address token, uint256 amount) external",
+  "function withdraw(address token, uint256 amount) external",
+];
+
 interface Asset {
   name: string;
   symbol: string;
@@ -85,8 +92,138 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalBalance, setTotalBalance] = useState("0.00");
+  const [totalVaultBalance, setTotalVaultBalance] = useState("0.00");
   const [hasVault, setHasVault] = useState(false);
   const [isCreatingVault, setIsCreatingVault] = useState(false);
+  const [vaultAddress, setVaultAddress] = useState<string | null>(null);
+  const [isDepositing, setIsDepositing] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+
+  const fetchBaseAssets = async () => {
+    if (!ready || !authenticated || !user?.wallet?.address) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const walletAddress = user.wallet.address;
+      const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
+      const ethBalance = await provider.getBalance(walletAddress);
+      let ethPrice = 0;
+      try {
+        const ethPriceFeed = new ethers.Contract(
+          ETH_USD_PRICE_FEED,
+          CHAINLINK_PRICE_FEED_ABI,
+          provider
+        );
+        const [, answer, , ,] = await ethPriceFeed.latestRoundData();
+        const decimals = await ethPriceFeed.decimals();
+        ethPrice = parseFloat(ethers.formatUnits(answer, decimals));
+      } catch (priceError) {
+        console.error("Error fetching ETH price:", priceError);
+        ethPrice = 3000;
+      }
+
+      const ethBalanceFormatted = ethers.formatEther(ethBalance);
+      const ethValue = parseFloat(ethBalanceFormatted) * ethPrice;
+
+      const userAssets: Asset[] = [
+        {
+          name: "Ether",
+          symbol: "ETH",
+          balance: ethBalanceFormatted,
+          address: "native",
+          type: "native",
+          price: ethPrice,
+          value: ethValue,
+        },
+      ];
+
+      let vaultTotalValue = 0;
+
+      for (const token of KNOWN_BASE_TOKENS) {
+        try {
+          const tokenContract = new ethers.Contract(
+            token.address,
+            ERC20_ABI,
+            provider
+          );
+          const balance = await tokenContract.balanceOf(walletAddress);
+          const decimals = await tokenContract.decimals();
+
+          // Get vault balance if vault exists
+          let vaultBalance = 0n;
+          if (vaultAddress) {
+            vaultBalance = await tokenContract.balanceOf(vaultAddress);
+          }
+
+          if (balance > 0 || vaultBalance > 0) {
+            let tokenPrice = 0;
+            if (token.priceFeed) {
+              try {
+                const priceFeed = new ethers.Contract(
+                  token.priceFeed,
+                  CHAINLINK_PRICE_FEED_ABI,
+                  provider
+                );
+                const [, answer, , ,] = await priceFeed.latestRoundData();
+                const priceDecimals = await priceFeed.decimals();
+                tokenPrice = parseFloat(
+                  ethers.formatUnits(answer, priceDecimals)
+                );
+              } catch (priceError) {
+                console.error(
+                  `Error fetching ${token.symbol} price:`,
+                  priceError
+                );
+                if (["USDC", "USDT", "DAI"].includes(token.symbol)) {
+                  tokenPrice = 1;
+                } else if (token.symbol === "WETH") {
+                  tokenPrice = ethPrice;
+                } else if (token.symbol === "cbETH") {
+                  tokenPrice = ethPrice * 1.05;
+                }
+              }
+            }
+
+            const tokenBalance = ethers.formatUnits(balance, decimals);
+            const tokenValue = parseFloat(tokenBalance) * tokenPrice;
+
+            // Calculate vault token value
+            const vaultTokenBalance = ethers.formatUnits(
+              vaultBalance,
+              decimals
+            );
+            const vaultTokenValue = parseFloat(vaultTokenBalance) * tokenPrice;
+            vaultTotalValue += vaultTokenValue;
+
+            userAssets.push({
+              name: token.name,
+              symbol: token.symbol,
+              balance: tokenBalance,
+              address: token.address,
+              type: "erc20",
+              price: tokenPrice,
+              value: tokenValue,
+            });
+          }
+        } catch (tokenError) {
+          console.error(`Error fetching token ${token.symbol}:`, tokenError);
+        }
+      }
+
+      setAssets(userAssets);
+      const total = userAssets.reduce((sum, asset) => sum + asset.value, 0);
+      setTotalBalance(total.toFixed(2));
+      setTotalVaultBalance(vaultTotalValue.toFixed(2));
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching Base assets:", err);
+      setError("Failed to load your assets. Please try again later.");
+      setLoading(false);
+    }
+  };
 
   // Check if user has a vault
   useEffect(() => {
@@ -101,10 +238,13 @@ export default function DashboardPage() {
           provider
         );
 
-        const vaultAddress = await vaultFactory.vaults(user.wallet.address);
-        setHasVault(
-          vaultAddress !== "0x0000000000000000000000000000000000000000"
-        );
+        const vault = await vaultFactory.vaults(user.wallet.address);
+        const hasExistingVault =
+          vault !== "0x0000000000000000000000000000000000000000";
+        setHasVault(hasExistingVault);
+        if (hasExistingVault) {
+          setVaultAddress(vault);
+        }
       } catch (err) {
         console.error("Error checking vault:", err);
       }
@@ -145,139 +285,75 @@ export default function DashboardPage() {
     }
   };
 
+  const handleDeposit = async (asset: Asset) => {
+    if (!vaultAddress || !user?.wallet?.address || asset.type === "native")
+      return;
+
+    try {
+      setIsDepositing(true);
+      setError(null);
+
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      // First approve the vault to spend tokens
+      const tokenContract = new Contract(asset.address, ERC20_ABI, signer);
+      const amount = ethers.parseUnits(asset.balance, 18); // Assuming 18 decimals, should be dynamic in production
+      console.log("amount", amount);
+      //deposit only 1000000000000000000n
+      const depositAmount = ethers.parseUnits("1000000000000000000", 18);
+      console.log("vaultAddress", vaultAddress);
+      console.log("tokenContract", tokenContract);
+
+      const approveTx = await tokenContract.approve(
+        vaultAddress,
+        depositAmount
+      );
+      await approveTx.wait();
+
+      // Now deposit into the vault
+      const vaultContract = new Contract(vaultAddress, VAULT_ABI, signer);
+      const depositTx = await vaultContract.deposit(asset.address, amount);
+      await depositTx.wait();
+
+      // Refresh assets
+      fetchBaseAssets();
+    } catch (err) {
+      console.error("Error depositing:", err);
+      setError("Failed to deposit. Please try again.");
+    } finally {
+      setIsDepositing(false);
+    }
+  };
+
+  const handleWithdraw = async (asset: Asset) => {
+    if (!vaultAddress || !user?.wallet?.address || asset.type === "native")
+      return;
+
+    try {
+      setIsWithdrawing(true);
+      setError(null);
+
+      const provider = new BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const vaultContract = new Contract(vaultAddress, VAULT_ABI, signer);
+      const amount = ethers.parseUnits(asset.balance, 18); // Assuming 18 decimals, should be dynamic in production
+
+      const withdrawTx = await vaultContract.withdraw(asset.address, amount);
+      await withdrawTx.wait();
+
+      // Refresh assets
+      fetchBaseAssets();
+    } catch (err) {
+      console.error("Error withdrawing:", err);
+      setError("Failed to withdraw. Please try again.");
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchBaseAssets = async () => {
-      if (!ready || !authenticated || !user?.wallet?.address) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        const walletAddress = user.wallet.address;
-
-        // Connect to Base blockchain
-        const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
-
-        // Get native ETH balance
-        const ethBalance = await provider.getBalance(walletAddress);
-
-        // Get ETH price from Chainlink
-        let ethPrice = 0;
-        try {
-          const ethPriceFeed = new ethers.Contract(
-            ETH_USD_PRICE_FEED,
-            CHAINLINK_PRICE_FEED_ABI,
-            provider
-          );
-
-          const [, answer, , ,] = await ethPriceFeed.latestRoundData();
-          const decimals = await ethPriceFeed.decimals();
-          ethPrice = parseFloat(ethers.formatUnits(answer, decimals));
-        } catch (priceError) {
-          console.error("Error fetching ETH price:", priceError);
-          // Fallback price if oracle fails
-          ethPrice = 3000;
-        }
-
-        const ethBalanceFormatted = ethers.formatEther(ethBalance);
-        const ethValue = parseFloat(ethBalanceFormatted) * ethPrice;
-
-        // Create array to hold all assets (starting with native ETH)
-        const userAssets: Asset[] = [
-          {
-            name: "Ether",
-            symbol: "ETH",
-            balance: ethBalanceFormatted,
-            address: "native",
-            type: "native",
-            price: ethPrice,
-            value: ethValue,
-          },
-        ];
-
-        // Fetch ERC20 balances and prices
-        for (const token of KNOWN_BASE_TOKENS) {
-          try {
-            const tokenContract = new ethers.Contract(
-              token.address,
-              ERC20_ABI,
-              provider
-            );
-            const balance = await tokenContract.balanceOf(walletAddress);
-            const decimals = await tokenContract.decimals();
-
-            // Only add tokens with non-zero balances
-            if (balance > 0) {
-              // Get token price from Chainlink if available
-              let tokenPrice = 0;
-
-              if (token.priceFeed) {
-                try {
-                  const priceFeed = new ethers.Contract(
-                    token.priceFeed,
-                    CHAINLINK_PRICE_FEED_ABI,
-                    provider
-                  );
-
-                  const [, answer, , ,] = await priceFeed.latestRoundData();
-                  const priceDecimals = await priceFeed.decimals();
-                  tokenPrice = parseFloat(
-                    ethers.formatUnits(answer, priceDecimals)
-                  );
-                } catch (priceError) {
-                  console.error(
-                    `Error fetching ${token.symbol} price:`,
-                    priceError
-                  );
-                  // Fallback prices if oracle fails
-                  if (
-                    token.symbol === "USDC" ||
-                    token.symbol === "USDT" ||
-                    token.symbol === "DAI"
-                  ) {
-                    tokenPrice = 1;
-                  } else if (token.symbol === "WETH") {
-                    tokenPrice = ethPrice;
-                  } else if (token.symbol === "cbETH") {
-                    tokenPrice = ethPrice * 1.05; // Slight premium for staked ETH
-                  }
-                }
-              }
-
-              const tokenBalance = ethers.formatUnits(balance, decimals);
-              const tokenValue = parseFloat(tokenBalance) * tokenPrice;
-
-              userAssets.push({
-                name: token.name,
-                symbol: token.symbol,
-                balance: tokenBalance,
-                address: token.address,
-                type: "erc20",
-                price: tokenPrice,
-                value: tokenValue,
-              });
-            }
-          } catch (tokenError) {
-            console.error(`Error fetching token ${token.symbol}:`, tokenError);
-            // Continue with other tokens
-          }
-        }
-
-        setAssets(userAssets);
-
-        // Calculate total balance from all assets
-        const total = userAssets.reduce((sum, asset) => sum + asset.value, 0);
-        setTotalBalance(total.toFixed(2));
-
-        setLoading(false);
-      } catch (err) {
-        console.error("Error fetching Base assets:", err);
-        setError("Failed to load your assets. Please try again later.");
-        setLoading(false);
-      }
-    };
-
     fetchBaseAssets();
   }, [user?.wallet?.address, authenticated, ready]);
 
@@ -314,7 +390,7 @@ export default function DashboardPage() {
                 onClick={createVault}
                 disabled={isCreatingVault || !authenticated}
               >
-                {isCreatingVault ? "Creating..." : "Create Vault"}
+                {isCreatingVault ? "Creating..." : "Create AI Vault"}
                 {!isCreatingVault && (
                   <svg
                     width="12"
@@ -351,11 +427,47 @@ export default function DashboardPage() {
               {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
             </div>
           ) : (
-            <StatCard
-              title="Vault"
-              value={`$${totalBalance}`}
-              className="border-2 border-black/5 hover:border-black/10 transition-all"
-            />
+            <div className="bg-white/50 backdrop-blur-xl shadow-sm rounded-2xl p-6 hover:bg-white/60 transition-all border-2 border-black/5 hover:border-black/10">
+              <p className="text-sm text-black/50">AI Vault</p>
+              <p className="mt-2 text-2xl font-bold">${totalVaultBalance}</p>
+              <a
+                href={`https://basescan.org/address/${vaultAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 text-xs text-blue-500 hover:text-blue-600 font-mono break-all flex items-center gap-1"
+              >
+                {vaultAddress}
+                <svg
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M18 13V19C18 19.5304 17.7893 20.0391 17.4142 20.4142C17.0391 20.7893 16.5304 21 16 21H5C4.46957 21 3.96086 20.7893 3.58579 20.4142C3.21071 20.0391 3 19.5304 3 19V8C3 7.46957 3.21071 6.96086 3.58579 6.58579C3.96086 6.21071 4.46957 6 5 6H11"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M15 3H21V9"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M10 14L21 3"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </a>
+            </div>
           )}
         </div>
 
@@ -389,17 +501,26 @@ export default function DashboardPage() {
             <div className="bg-white/50 backdrop-blur-xl shadow-xl rounded-2xl border-2 border-black/5 hover:border-black/10 transition-all">
               <div
                 className="grid text-sm font-medium text-black/70 p-6 border-b-2 border-black/5"
-                style={{ gridTemplateColumns: "30% 20% 25% 25%" }}
+                style={{ gridTemplateColumns: "30% 20% 15% 15% 20%" }}
               >
                 <div>Asset</div>
                 <div className="text-right">Balance</div>
                 <div className="text-right">Price</div>
                 <div className="text-right">Value</div>
+                <div className="text-right">Actions</div>
               </div>
 
               <div className="divide-y-2 divide-black/5">
                 {assets.map((asset) => (
-                  <AssetRow key={asset.address} asset={asset} />
+                  <AssetRow
+                    key={asset.address}
+                    asset={asset}
+                    handleDeposit={handleDeposit}
+                    handleWithdraw={handleWithdraw}
+                    isDepositing={isDepositing}
+                    isWithdrawing={isWithdrawing}
+                    hasVault={hasVault}
+                  />
                 ))}
               </div>
             </div>
@@ -410,11 +531,25 @@ export default function DashboardPage() {
   );
 }
 
-function AssetRow({ asset }: { asset: Asset }) {
+function AssetRow({
+  asset,
+  handleDeposit,
+  handleWithdraw,
+  isDepositing,
+  isWithdrawing,
+  hasVault,
+}: {
+  asset: Asset;
+  handleDeposit: (asset: Asset) => Promise<void>;
+  handleWithdraw: (asset: Asset) => Promise<void>;
+  isDepositing: boolean;
+  isWithdrawing: boolean;
+  hasVault: boolean;
+}) {
   return (
     <div
       className="grid p-6 hover:bg-black/[0.02] transition-colors"
-      style={{ gridTemplateColumns: "30% 20% 25% 25%" }}
+      style={{ gridTemplateColumns: "30% 20% 15% 15% 20%" }}
     >
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-black/5 rounded-full flex items-center justify-center font-medium">
@@ -433,6 +568,26 @@ function AssetRow({ asset }: { asset: Asset }) {
       </div>
       <div className="text-right self-center font-medium">
         ${asset.value.toFixed(2)}
+      </div>
+      <div className="flex justify-end gap-2 self-center">
+        {asset.type === "erc20" && (
+          <>
+            <button
+              onClick={() => handleDeposit(asset)}
+              disabled={isDepositing || !hasVault}
+              className="bg-green-500 text-white px-3 py-1 rounded text-sm font-medium hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDepositing ? "Depositing..." : "Deposit"}
+            </button>
+            <button
+              onClick={() => handleWithdraw(asset)}
+              disabled={isWithdrawing || !hasVault}
+              className="bg-red-500 text-white px-3 py-1 rounded text-sm font-medium hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isWithdrawing ? "Withdrawing..." : "Withdraw"}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
