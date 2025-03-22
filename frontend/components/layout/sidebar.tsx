@@ -19,9 +19,9 @@ interface SidebarProps {
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Trading", href: "/dashboard/trading", icon: LineChart },
-  { name: "History", href: "/dashboard/history", icon: History },
+  { name: "Trading Signals", href: "/dashboard/trading", icon: LineChart },
   { name: "Automation", href: "/dashboard/automation", icon: Bot },
+  { name: "History", href: "/dashboard/history", icon: History },
   { name: "Security", href: "/dashboard/security", icon: Shield },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
