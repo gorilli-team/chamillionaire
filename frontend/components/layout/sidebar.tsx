@@ -35,8 +35,10 @@ export function Sidebar({ className }: SidebarProps) {
       )}
     >
       <div className="mb-12 px-2">
-        <h1 className="text-2xl font-bold tracking-tight">Chamillionaire</h1>
-        <p className="text-sm text-black/50 mt-1">AI Trading Assistant</p>
+        <h1 className="text-2xl font-bold tracking-tight">Chamillionaire 🦎</h1>
+        <p className="text-sm text-black/50 mt-1">
+          Adapt Holding to the Market
+        </p>
       </div>
       <nav className="space-y-2">
         {navigation.map((item) => {
