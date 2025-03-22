@@ -85,7 +85,7 @@ class GeneratedSignal(BaseModel):
 # --------------------------------------------------------------
 # Final function to call
 # --------------------------------------------------------------
-async def generate_optimized_signal(question: str):
+async def generate_optimized_signal():
     """Generates an optimized signal from three raw signals in parallel"""
     completion = await client.chat.completions.create(
         model=model,
@@ -156,7 +156,7 @@ async def generate_optimized_signal(question: str):
 # --------------------------------------------------------------
 async def run_valid_example():
     valid_input = "What trade should I do today?"
-    result = await generate_optimized_signal(valid_input)
+    result = await generate_optimized_signal()
     
     print(f"Response: {result.choices[0].message.parsed}")
     
