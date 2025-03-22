@@ -153,7 +153,7 @@ export default function DashboardPage() {
           const decimals = await tokenContract.decimals();
 
           // Get vault balance if vault exists
-          let vaultBalance = 0n;
+          let vaultBalance = BigInt(0);
           if (vaultAddress) {
             vaultBalance = await tokenContract.balanceOf(vaultAddress);
           }
