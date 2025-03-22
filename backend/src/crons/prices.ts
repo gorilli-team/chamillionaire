@@ -4,6 +4,7 @@ import cron from "node-cron";
 
 console.log("Initializing price update cron job...");
 cron.schedule("*/5 * * * *", async () => {
+  console.log("Fetching prices... " + new Date().toISOString());
   for (const token of Object.keys(symbolToTokenInfo)) {
     console.log(`Fetching price for ${token}`);
     try {
