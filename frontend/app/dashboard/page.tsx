@@ -5,6 +5,7 @@ import { BaseLayout } from "../../components/layout/base-layout";
 import { cn } from "../../lib/utils";
 import { usePrivy } from "@privy-io/react-auth";
 import { ethers } from "ethers";
+import { BrowserProvider, Contract } from "ethers";
 
 // Standard ERC20 ABI (only the functions we need)
 const ERC20_ABI = [
@@ -60,6 +61,14 @@ const KNOWN_BASE_TOKENS = [
 // ETH/USD price feed for native ETH
 const ETH_USD_PRICE_FEED = "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70";
 
+// Add VaultFactory ABI
+const VAULT_FACTORY_ABI = [
+  "function createVault() external returns (address)",
+  "function vaults(address owner) view returns (address)",
+];
+
+const VAULT_FACTORY_ADDRESS = "0x7f9476fB4d637045dF62fdC27230fD9784D11Ad2";
+
 interface Asset {
   name: string;
   symbol: string;
@@ -77,6 +86,64 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [totalBalance, setTotalBalance] = useState("0.00");
   const [hasVault, setHasVault] = useState(false);
+  const [isCreatingVault, setIsCreatingVault] = useState(false);
+
+  // Check if user has a vault
+  useEffect(() => {
+    const checkVault = async () => {
+      if (!ready || !authenticated || !user?.wallet?.address) return;
+
+      try {
+        const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
+        const vaultFactory = new ethers.Contract(
+          VAULT_FACTORY_ADDRESS,
+          VAULT_FACTORY_ABI,
+          provider
+        );
+
+        const vaultAddress = await vaultFactory.vaults(user.wallet.address);
+        setHasVault(
+          vaultAddress !== "0x0000000000000000000000000000000000000000"
+        );
+      } catch (err) {
+        console.error("Error checking vault:", err);
+      }
+    };
+
+    checkVault();
+  }, [user?.wallet?.address, authenticated, ready]);
+
+  const createVault = async () => {
+    if (!user?.wallet?.address) return;
+
+    try {
+      setIsCreatingVault(true);
+      setError(null);
+
+      // Get provider using the BrowserProvider for web3 wallets (e.g., MetaMask, Privy)
+      const provider = new BrowserProvider(window.ethereum); // Correct provider for v6
+      const signer = await provider.getSigner(); // Get signer from the provider
+
+      // Create contract instance with signer
+      const vaultFactory = new Contract(
+        VAULT_FACTORY_ADDRESS,
+        VAULT_FACTORY_ABI,
+        signer
+      );
+
+      // Create vault transaction
+      const tx = await vaultFactory.createVault();
+      await tx.wait();
+
+      // Update vault status
+      setHasVault(true);
+    } catch (err) {
+      console.error("Error creating vault:", err);
+      setError("Failed to create vault. Please try again.");
+    } finally {
+      setIsCreatingVault(false);
+    }
+  };
 
   useEffect(() => {
     const fetchBaseAssets = async () => {
@@ -240,24 +307,18 @@ export default function DashboardPage() {
             value={`$${totalBalance}`}
             className="border-2 border-black/5 hover:border-black/10 transition-all"
           />
-          {/* check if user has a vault, if not, show a button to create a vault */}
           {!hasVault ? (
             <div className="bg-white/50 backdrop-blur-xl shadow-sm rounded-2xl p-6 hover:bg-white/60 transition-all border-2 border-black/5 hover:border-black/10 flex items-center">
-              <div className="flex flex-col gap-2">
-                <p className="text-sm text-black/50">
-                  Create a vault to start managing your assets.
-                </p>
-
-                <button
-                  className="bg-[rgb(0,82,255)] text-white px-4 py-2 rounded-lg font-medium hover:bg-[rgb(0,82,255)]/90 shadow-md shadow-[rgb(0,82,255)]/10 backdrop-blur-xl transition-all flex items-center gap-1.5 text-sm"
-                  onClick={() => {
-                    // TODO: Implement vault creation
-                  }}
-                >
-                  Create Vault
+              <button
+                className="bg-[rgb(0,82,255)] text-white px-4 py-2 rounded-lg font-medium hover:bg-[rgb(0,82,255)]/90 shadow-md shadow-[rgb(0,82,255)]/10 backdrop-blur-xl transition-all flex items-center gap-1.5 text-xs disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={createVault}
+                disabled={isCreatingVault || !authenticated}
+              >
+                {isCreatingVault ? "Creating..." : "Create Vault"}
+                {!isCreatingVault && (
                   <svg
-                    width="24"
-                    height="24"
+                    width="12"
+                    height="12"
                     viewBox="0 0 24 24"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
@@ -285,8 +346,9 @@ export default function DashboardPage() {
                       strokeLinejoin="round"
                     />
                   </svg>
-                </button>
-              </div>
+                )}
+              </button>
+              {error && <p className="text-xs text-red-500 mt-2">{error}</p>}
             </div>
           ) : (
             <StatCard
