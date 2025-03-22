@@ -1,0 +1,9 @@
+{
+  "name": "chamillionaire",
+  "version": "1.0.0",
+  "description": "Chamillionaire: AI-powered crypto trading assistant",
+  "engines": {
+    "node": ">=18.x",
+    "yarn": ">=1.22.19"
+  }
+}
