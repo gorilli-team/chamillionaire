@@ -83,7 +83,7 @@ interface Transaction {
 const ITEMS_PER_PAGE = 10;
 const BASE_SCAN_URL = "https://basescan.org";
 
-export default function DashboardPage() {
+export default function HistoryPage() {
   const { user, authenticated, ready } = usePrivy();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);

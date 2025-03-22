@@ -10,6 +10,7 @@ import {
   Settings,
   History,
   Shield,
+  Bot,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -20,6 +21,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Trading", href: "/dashboard/trading", icon: LineChart },
   { name: "History", href: "/dashboard/history", icon: History },
+  { name: "Automation", href: "/dashboard/automation", icon: Bot },
   { name: "Security", href: "/dashboard/security", icon: Shield },
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
