@@ -85,6 +85,7 @@ interface Asset {
   price: number;
   value: number;
   decimals?: number;
+  vaultBalance?: string;
 }
 
 function DepositDialog({
@@ -195,6 +196,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalBalance, setTotalBalance] = useState("0.00");
+  const [walletBalance, setWalletBalance] = useState("0.00");
   const [totalVaultBalance, setTotalVaultBalance] = useState("0.00");
   const [hasVault, setHasVault] = useState(false);
   const [isCreatingVault, setIsCreatingVault] = useState(false);
@@ -345,6 +347,7 @@ export default function DashboardPage() {
               price: tokenPrice,
               value: tokenValue,
               decimals: decimals,
+              vaultBalance: vaultTokenBalance,
             });
           }
         } catch (tokenError) {
@@ -353,9 +356,11 @@ export default function DashboardPage() {
       }
 
       setAssets(userAssets);
-      const total = userAssets.reduce((sum, asset) => sum + asset.value, 0);
-      setTotalBalance(total.toFixed(2));
-      console.log("Final vault total value:", vaultTotalValue);
+      const walletTotal = userAssets.reduce(
+        (sum, asset) => sum + asset.value,
+        0
+      );
+      setWalletBalance(walletTotal.toFixed(2));
       setTotalVaultBalance(vaultTotalValue.toFixed(2));
       setLoading(false);
     } catch (err) {
@@ -524,7 +529,15 @@ export default function DashboardPage() {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Balance"
-            value={`$${totalBalance}`}
+            value={`$${(
+              Number(walletBalance) + Number(totalVaultBalance)
+            ).toFixed(2)}`}
+            className="border-2 border-black/5 hover:border-black/10 transition-all"
+          />
+
+          <StatCard
+            title="Wallet Balance"
+            value={`$${walletBalance}`}
             className="border-2 border-black/5 hover:border-black/10 transition-all"
           />
           {!hasVault ? (
@@ -572,7 +585,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="bg-white/50 backdrop-blur-xl shadow-sm rounded-2xl p-6 hover:bg-white/60 transition-all border-2 border-black/5 hover:border-black/10">
-              <p className="text-sm text-black/50">AI Vault</p>
+              <p className="text-sm text-black/50">AI Vault Balance</p>
               <p className="mt-2 text-2xl font-bold">${totalVaultBalance}</p>
               <a
                 href={`https://basescan.org/address/${vaultAddress}`}
@@ -645,26 +658,75 @@ export default function DashboardPage() {
             <div className="bg-white/50 backdrop-blur-xl shadow-xl rounded-2xl border-2 border-black/5 hover:border-black/10 transition-all">
               <div
                 className="grid text-sm font-medium text-black/70 p-6 border-b-2 border-black/5"
-                style={{ gridTemplateColumns: "30% 20% 15% 15% 20%" }}
+                style={{
+                  gridTemplateColumns: "20% 15% 15% 12.5% 12.5% 12.5% 12.5%",
+                }}
               >
                 <div>Asset</div>
-                <div className="text-right">Balance</div>
+                <div className="text-right">Balance in Wallet</div>
+                <div className="text-right">Balance in AI Vault</div>
                 <div className="text-right">Price</div>
                 <div className="text-right">Value</div>
-                <div className="text-right">Actions</div>
+                <div className="text-right">Deposit</div>
+                <div className="text-right">Withdraw</div>
               </div>
 
               <div className="divide-y-2 divide-black/5">
                 {assets.map((asset) => (
-                  <AssetRow
+                  <div
                     key={asset.address}
-                    asset={asset}
-                    handleDepositClick={handleDepositClick}
-                    handleWithdraw={handleWithdraw}
-                    isDepositing={isDepositing}
-                    isWithdrawing={isWithdrawing}
-                    hasVault={hasVault}
-                  />
+                    className="grid p-6 hover:bg-black/[0.02] transition-colors"
+                    style={{
+                      gridTemplateColumns:
+                        "20% 15% 15% 12.5% 12.5% 12.5% 12.5%",
+                    }}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-black/5 rounded-full flex items-center justify-center font-medium">
+                        {asset.symbol.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-medium">{asset.symbol}</p>
+                        <p className="text-sm text-black/50">{asset.name}</p>
+                      </div>
+                    </div>
+                    <div className="text-right self-center font-mono">
+                      {parseFloat(asset.balance).toFixed(6)}
+                    </div>
+                    <div className="text-right self-center font-mono">
+                      {asset.vaultBalance
+                        ? parseFloat(asset.vaultBalance).toFixed(6)
+                        : "0.000000"}
+                    </div>
+                    <div className="text-right self-center font-mono">
+                      ${asset.price.toFixed(2)}
+                    </div>
+                    <div className="text-right self-center font-mono">
+                      ${asset.value.toFixed(2)}
+                    </div>
+                    <div className="flex justify-end self-center">
+                      {asset.type === "erc20" && (
+                        <button
+                          onClick={() => handleDepositClick(asset)}
+                          disabled={isDepositing || !hasVault}
+                          className="bg-green-500 text-white px-3 py-1 rounded text-sm font-medium hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isDepositing ? "Depositing..." : "Deposit"}
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex justify-end self-center">
+                      {asset.type === "erc20" && (
+                        <button
+                          onClick={() => handleWithdraw(asset)}
+                          disabled={isWithdrawing || !hasVault}
+                          className="bg-red-500 text-white px-3 py-1 rounded text-sm font-medium hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {isWithdrawing ? "Withdrawing..." : "Withdraw"}
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -684,75 +746,15 @@ export default function DashboardPage() {
   );
 }
 
-function AssetRow({
-  asset,
-  handleDepositClick,
-  handleWithdraw,
-  isDepositing,
-  isWithdrawing,
-  hasVault,
+function StatCard({
+  title,
+  value,
+  className,
 }: {
-  asset: Asset;
-  handleDepositClick: (asset: Asset) => void;
-  handleWithdraw: (asset: Asset) => Promise<void>;
-  isDepositing: boolean;
-  isWithdrawing: boolean;
-  hasVault: boolean;
-}) {
-  return (
-    <div
-      className="grid p-6 hover:bg-black/[0.02] transition-colors"
-      style={{ gridTemplateColumns: "30% 20% 15% 15% 20%" }}
-    >
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 bg-black/5 rounded-full flex items-center justify-center font-medium">
-          {asset.symbol.charAt(0)}
-        </div>
-        <div>
-          <p className="font-medium">{asset.symbol}</p>
-          <p className="text-sm text-black/50">{asset.name}</p>
-        </div>
-      </div>
-      <div className="text-right self-center font-mono">
-        {parseFloat(asset.balance).toFixed(6)}
-      </div>
-      <div className="text-right self-center font-mono">
-        ${asset.price.toFixed(2)}
-      </div>
-      <div className="text-right self-center font-medium">
-        ${asset.value.toFixed(2)}
-      </div>
-      <div className="flex justify-end gap-2 self-center">
-        {asset.type === "erc20" && (
-          <>
-            <button
-              onClick={() => handleDepositClick(asset)}
-              disabled={isDepositing || !hasVault}
-              className="bg-green-500 text-white px-3 py-1 rounded text-sm font-medium hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isDepositing ? "Depositing..." : "Deposit"}
-            </button>
-            <button
-              onClick={() => handleWithdraw(asset)}
-              disabled={isWithdrawing || !hasVault}
-              className="bg-red-500 text-white px-3 py-1 rounded text-sm font-medium hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isWithdrawing ? "Withdrawing..." : "Withdraw"}
-            </button>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-interface StatCardProps {
   title: string;
   value: string;
   className?: string;
-}
-
-function StatCard({ title, value, className }: StatCardProps) {
+}) {
   return (
     <div
       className={cn(
