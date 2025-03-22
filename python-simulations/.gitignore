@@ -1,0 +1,11 @@
+# Python virtual environment
+.venv
+
+# Environment variables
+.env
+
+# Python files
+*.pyc
+*.pyo
+*.pyd
+*.pyw

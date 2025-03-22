@@ -1,0 +1,44 @@
+{
+  "records": [
+    {
+      "id": 1,
+      "type": "Price",
+      "event": "YAKI was worth 0.0163$ on 2025-03-20 at 11:20"
+    },
+    {
+      "id": 2,
+      "type": "Price",
+      "event": "YAKI was worth 0.0153$ on 2025-03-20 at 11:21"
+    },
+    {
+      "id": 3,
+      "type": "Price",
+      "event": "YAKI was worth 0.0143$ on 2025-03-20 at 11:22"
+    },
+    {
+      "id": 4,
+      "type": "Price",
+      "event": "YAKI was worth 0.0133$ on 2025-03-20 at 11:23"
+    },
+    {
+      "id": 5,
+      "type": "Price",
+      "event": "YAKI was worth 0.0143$ on 2025-03-20 at 11:24"
+    },
+    {
+      "id": 6,
+      "type": "Price",
+      "event": "YAKI was worth 0.0153$ on 2025-03-20 at 11:25"
+    },
+    {
+      "id": 7,
+      "type": "Price",
+      "event": "YAKI was worth 0.0143$ on 2025-03-20 at 11:26"
+    },
+    {
+      "id": 8,
+      "type": "Whale",
+      "event": "Whale-1 has bought 1000000 YAKI on 2025-03-20 at 11:31"
+    }
+  ]
+}
