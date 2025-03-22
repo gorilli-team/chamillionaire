@@ -1,8 +1,12 @@
+"use client";
+
 import React from "react";
-import { Button } from "../components/ui/button";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-purple-900 text-white">
       {/* Hero noise overlay */}
@@ -24,34 +28,12 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="flex flex-col gap-4 sm:flex-row">
-            {/* Using the more direct approach for linking */}
-            <Link href="/dashboard">
-              <div className="inline-flex cursor-pointer bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium px-8 py-6 rounded-md">
-                <span className="flex items-center gap-2">
-                  Get Started
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M5 12h14"></path>
-                    <path d="m12 5 7 7-7 7"></path>
-                  </svg>
-                </span>
-              </div>
-            </Link>
-
-            <div className="bg-transparent border border-gray-600 hover:bg-white/5 text-white font-medium px-8 py-6 rounded-md cursor-pointer">
-              Learn More
-            </div>
-          </div>
+          <Link
+            href="/dashboard"
+            className="relative block w-64 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-medium px-8 py-6 rounded-md text-center cursor-pointer z-0"
+          >
+            Get Started
+          </Link>
 
           {/* Feature cards section with glassmorphism */}
           <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 shadow-2xl">
