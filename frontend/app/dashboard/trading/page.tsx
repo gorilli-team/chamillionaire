@@ -138,7 +138,7 @@ export default function TradingPage() {
                       {new Date(signal.createdAt).toLocaleString()}
                     </div>
                   </div>
-                  <div className="text-sm text-black/70 pl-4 border-l-2 border-black/10">
+                  <div className="text-sm text-black pl-4 border-l-2 border-black/10">
                     {signal.motivation}
                   </div>
                 </div>

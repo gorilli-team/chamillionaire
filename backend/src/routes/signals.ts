@@ -34,7 +34,7 @@ router.post("/", async (req, res) => {
 
 // Get all signals
 router.get("/", async (req, res) => {
-  const signals = await SignalData.find();
+  const signals = await SignalData.find().sort({ createdAt: -1 });
   res.json(signals);
 });
 
