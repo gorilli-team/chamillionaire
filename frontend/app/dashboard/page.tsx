@@ -322,7 +322,7 @@ export default function DashboardPage() {
       setAssets(userAssets);
       const total = userAssets.reduce((sum, asset) => sum + asset.value, 0);
       setTotalBalance(total.toFixed(2));
-      setTotalVaultBalance(vaultTotalValue.toFixed(2));
+      setTotalVaultBalance(vaultTotalValue.toFixed(6));
       setLoading(false);
     } catch (err) {
       console.error("Error fetching Base assets:", err);
@@ -539,7 +539,13 @@ export default function DashboardPage() {
           ) : (
             <div className="bg-white/50 backdrop-blur-xl shadow-sm rounded-2xl p-6 hover:bg-white/60 transition-all border-2 border-black/5 hover:border-black/10">
               <p className="text-sm text-black/50">AI Vault</p>
-              <p className="mt-2 text-2xl font-bold">${totalVaultBalance}</p>
+              <p className="mt-2 text-2xl font-bold">
+                $
+                {parseFloat(totalVaultBalance).toLocaleString("en-US", {
+                  minimumFractionDigits: 6,
+                  maximumFractionDigits: 6,
+                })}
+              </p>
               <a
                 href={`https://basescan.org/address/${vaultAddress}`}
                 target="_blank"
