@@ -1,5 +1,7 @@
 import express from "express";
 import { SignalData } from "../models/SignalData";
+import { UserSignal } from "../models/UserSignal";
+import { User } from "../models/User";
 const router = express.Router();
 
 // Create a new signal
@@ -29,6 +31,37 @@ router.post("/", async (req, res) => {
     motivation,
   });
   await signalData.save();
+
+  /*
+  Create a new user signal for each user  signal: string;
+  symbol: string;
+  quantity: number;
+  confidenceScore: number;
+  wasRead: boolean;
+  wasTriggered: boolean;
+  txHash: string;
+  eventId: number;
+  motivation: string;
+  createdAt: Date;
+  updatedAt: Date;
+  */
+
+  //get all users
+  const users = await User.find();
+  users.forEach(async (user) => {
+    console.log("user", user);
+    const userSignal = new UserSignal({
+      user: user._id,
+      signal: signal,
+      symbol: symbol,
+      quantity: quantity,
+      confidenceScore: confidenceScore,
+      eventId: eventId,
+      motivation: motivation,
+    });
+    await userSignal.save();
+  });
+
   res.status(201).json(signalData);
 });
 

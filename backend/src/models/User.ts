@@ -11,6 +11,9 @@ const UserSchema: Schema = new Schema(
   {
     address: {
       type: String,
+      required: true,
+      unique: true,
+      trim: true,
     },
     lastSignIn: {
       type: Date,
