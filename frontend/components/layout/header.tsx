@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLogin, usePrivy, useWallets } from "@privy-io/react-auth";
 import { Button } from "../ui/button";
 import { cn } from "../../lib/utils";
@@ -34,12 +34,24 @@ export function Header({ className }: HeaderProps) {
   const isConnectedToBase = activeWallet?.chainId === BASE_CHAIN_ID;
 
   const signIn = async () => {
-    await login();
-    await fetch("/api/users/signin", {
-      method: "POST",
-      body: JSON.stringify({ address: activeWallet?.address }),
-    });
+    try {
+      await login();
+    } catch (error) {
+      console.error("Error signing in:", error);
+    }
   };
+
+  useEffect(() => {
+    if (activeWallet) {
+      fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/signin`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ address: activeWallet.address }),
+      });
+    }
+  }, [activeWallet]);
 
   // Function to switch to Base network
   const switchToBase = async () => {

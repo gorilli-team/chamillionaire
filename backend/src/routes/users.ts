@@ -1,7 +1,6 @@
 import express from "express";
+import { User } from "../models/User";
 const router = express.Router();
-const { ethers } = require("ethers");
-const User = require("../../models/User");
 
 //track user signin
 router.post("/signin", async (req, res) => {
@@ -12,6 +11,8 @@ router.post("/signin", async (req, res) => {
     if (!address) {
       return res.status(400).json({ error: "No address provided" });
     }
+
+    console.log("address.toLowerCase()", address.toLowerCase());
 
     const user = await User.findOne({ address: address.toLowerCase() });
 
@@ -30,7 +31,7 @@ router.post("/signin", async (req, res) => {
       res.json({ message: "User activity updated" });
     }
   } catch (error) {
-    console.error("Error fetching points:", error);
+    console.error("Error signing in:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
@@ -47,4 +48,4 @@ router.get("/me", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

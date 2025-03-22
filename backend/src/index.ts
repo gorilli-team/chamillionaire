@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import tokenPriceRoutes from "./routes/tokenPrices";
 import signalRoutes from "./routes/signals";
+import userRoutes from "./routes/users";
 import "./crons/prices";
 
 // Load environment variables
@@ -19,6 +20,7 @@ app.use(express.json());
 // Routes
 app.use("/api/token-prices", tokenPriceRoutes);
 app.use("/api/signals", signalRoutes);
+app.use("/api/users", userRoutes);
 
 // Basic route
 app.get("/", (req, res) => {
