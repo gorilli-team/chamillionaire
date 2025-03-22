@@ -190,6 +190,108 @@ function DepositDialog({
   );
 }
 
+function WithdrawDialog({
+  isOpen,
+  onClose,
+  onConfirm,
+  asset,
+  maxAmount,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (amount: string) => void;
+  asset: Asset;
+  maxAmount: string;
+}) {
+  const [amount, setAmount] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setAmount(value);
+
+    if (Number(value) > Number(maxAmount)) {
+      setError("Amount exceeds vault balance");
+    } else if (Number(value) <= 0) {
+      setError("Amount must be greater than 0");
+    } else {
+      setError(null);
+    }
+  };
+
+  const handleConfirm = () => {
+    if (
+      error ||
+      !amount ||
+      Number(amount) <= 0 ||
+      Number(amount) > Number(maxAmount)
+    ) {
+      return;
+    }
+    onConfirm(amount);
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div className="bg-white rounded-2xl p-6 w-96 space-y-4 shadow-xl">
+          <h3 className="text-lg font-bold">Withdraw {asset.symbol}</h3>
+          <div className="space-y-2">
+            <label className="text-sm text-black/50">Amount</label>
+            <div className="relative">
+              <input
+                type="number"
+                value={amount}
+                onChange={handleAmountChange}
+                placeholder="0.0"
+                min="0"
+                step="any"
+                className="w-full p-2 border-2 border-black/10 rounded-lg bg-white"
+              />
+              <button
+                onClick={() => {
+                  setAmount(maxAmount);
+                  setError(null);
+                }}
+                className="absolute right-2 top-2 text-sm text-blue-500 hover:text-blue-600"
+              >
+                Max
+              </button>
+            </div>
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-black/50">
+                Max: {maxAmount} {asset.symbol}
+              </p>
+              {error && <p className="text-sm text-red-500">{error}</p>}
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-black/50 hover:text-black"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={!!error || !amount || Number(amount) <= 0}
+              className="px-4 py-2 text-sm font-medium bg-red-500 text-white rounded hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Confirm Withdraw
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function DashboardPage() {
   const { user, authenticated, ready } = usePrivy();
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -205,6 +307,7 @@ export default function DashboardPage() {
   const [isWithdrawing, setIsWithdrawing] = useState(false);
   const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [isDepositDialogOpen, setIsDepositDialogOpen] = useState(false);
+  const [isWithdrawDialogOpen, setIsWithdrawDialogOpen] = useState(false);
 
   const fetchBaseAssets = async () => {
     if (!ready || !authenticated || !user?.wallet?.address) {
@@ -475,7 +578,18 @@ export default function DashboardPage() {
     }
   };
 
-  const handleWithdraw = async (asset: Asset) => {
+  const handleWithdrawClick = (asset: Asset) => {
+    setSelectedAsset(asset);
+    setIsWithdrawDialogOpen(true);
+  };
+
+  const handleWithdrawConfirm = async (amount: string) => {
+    if (!selectedAsset) return;
+    setIsWithdrawDialogOpen(false);
+    await handleWithdraw(selectedAsset, amount);
+  };
+
+  const handleWithdraw = async (asset: Asset, withdrawAmount: string) => {
     if (!vaultAddress || !user?.wallet?.address || asset.type === "native")
       return;
 
@@ -487,7 +601,8 @@ export default function DashboardPage() {
       const signer = await provider.getSigner();
 
       const vaultContract = new Contract(vaultAddress, VAULT_ABI, signer);
-      const amount = ethers.parseUnits(asset.balance, 18); // Assuming 18 decimals, should be dynamic in production
+      const decimals = asset.decimals || 18;
+      const amount = ethers.parseUnits(withdrawAmount, decimals);
 
       const withdrawTx = await vaultContract.withdraw(asset.address, amount);
       await withdrawTx.wait();
@@ -718,7 +833,7 @@ export default function DashboardPage() {
                     <div className="flex justify-end self-center">
                       {asset.type === "erc20" && (
                         <button
-                          onClick={() => handleWithdraw(asset)}
+                          onClick={() => handleWithdrawClick(asset)}
                           disabled={isWithdrawing || !hasVault}
                           className="bg-red-500 text-white px-3 py-1 rounded text-sm font-medium hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
@@ -733,13 +848,22 @@ export default function DashboardPage() {
           )}
         </div>
         {selectedAsset && (
-          <DepositDialog
-            isOpen={isDepositDialogOpen}
-            onClose={() => setIsDepositDialogOpen(false)}
-            onConfirm={handleDepositConfirm}
-            asset={selectedAsset}
-            maxAmount={selectedAsset.balance}
-          />
+          <>
+            <DepositDialog
+              isOpen={isDepositDialogOpen}
+              onClose={() => setIsDepositDialogOpen(false)}
+              onConfirm={handleDepositConfirm}
+              asset={selectedAsset}
+              maxAmount={selectedAsset.balance}
+            />
+            <WithdrawDialog
+              isOpen={isWithdrawDialogOpen}
+              onClose={() => setIsWithdrawDialogOpen(false)}
+              onConfirm={handleWithdrawConfirm}
+              asset={selectedAsset}
+              maxAmount={selectedAsset.vaultBalance || "0"}
+            />
+          </>
         )}
       </div>
     </BaseLayout>
