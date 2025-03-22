@@ -259,11 +259,32 @@ export default function DashboardPage() {
 
           // Get vault balance if vault exists
           let vaultBalance = BigInt(0);
+          console.log("vaultAddress", vaultAddress);
           if (vaultAddress) {
-            vaultBalance = await tokenContract.balanceOf(vaultAddress);
+            console.log(`\nChecking vault balance for ${token.symbol}:`);
+            console.log(`- Token address: ${token.address}`);
+            console.log(`- Vault address: ${vaultAddress}`);
+            try {
+              vaultBalance = await tokenContract.balanceOf(vaultAddress);
+              console.log(`- Raw vault balance: ${vaultBalance.toString()}`);
+              const formattedVaultBalance = ethers.formatUnits(
+                vaultBalance,
+                decimals
+              );
+              console.log(
+                `- Formatted vault balance: ${formattedVaultBalance}`
+              );
+              console.log(`- Token decimals: ${decimals}`);
+            } catch (vaultError) {
+              console.error(
+                `Error checking vault balance for ${token.symbol}:`,
+                vaultError
+              );
+            }
           }
 
-          if (balance > 0 || vaultBalance > 0) {
+          // Always process token if there's a vault balance, even if wallet balance is 0
+          if (balance > 0 || vaultBalance > BigInt(0)) {
             let tokenPrice = 0;
             if (token.priceFeed) {
               try {
@@ -277,6 +298,7 @@ export default function DashboardPage() {
                 tokenPrice = parseFloat(
                   ethers.formatUnits(answer, priceDecimals)
                 );
+                console.log(`Price for ${token.symbol}:`, tokenPrice);
               } catch (priceError) {
                 console.error(
                   `Error fetching ${token.symbol} price:`,
@@ -295,12 +317,23 @@ export default function DashboardPage() {
             const tokenBalance = ethers.formatUnits(balance, decimals);
             const tokenValue = parseFloat(tokenBalance) * tokenPrice;
 
+            console.log(`${token.symbol} token stats:`, {
+              balance: tokenBalance,
+              price: tokenPrice,
+              value: tokenValue,
+            });
+
             // Calculate vault token value
             const vaultTokenBalance = ethers.formatUnits(
               vaultBalance,
               decimals
             );
             const vaultTokenValue = parseFloat(vaultTokenBalance) * tokenPrice;
+            console.log(`${token.symbol} vault stats:`, {
+              balance: vaultTokenBalance,
+              price: tokenPrice,
+              value: vaultTokenValue,
+            });
             vaultTotalValue += vaultTokenValue;
 
             userAssets.push({
@@ -322,7 +355,8 @@ export default function DashboardPage() {
       setAssets(userAssets);
       const total = userAssets.reduce((sum, asset) => sum + asset.value, 0);
       setTotalBalance(total.toFixed(2));
-      setTotalVaultBalance(vaultTotalValue.toFixed(6));
+      console.log("Final vault total value:", vaultTotalValue);
+      setTotalVaultBalance(vaultTotalValue.toFixed(2));
       setLoading(false);
     } catch (err) {
       console.error("Error fetching Base assets:", err);
@@ -465,7 +499,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchBaseAssets();
-  }, [user?.wallet?.address, authenticated, ready]);
+  }, [user?.wallet?.address, authenticated, ready, vaultAddress]);
 
   return (
     <BaseLayout>
@@ -539,13 +573,7 @@ export default function DashboardPage() {
           ) : (
             <div className="bg-white/50 backdrop-blur-xl shadow-sm rounded-2xl p-6 hover:bg-white/60 transition-all border-2 border-black/5 hover:border-black/10">
               <p className="text-sm text-black/50">AI Vault</p>
-              <p className="mt-2 text-2xl font-bold">
-                $
-                {parseFloat(totalVaultBalance).toLocaleString("en-US", {
-                  minimumFractionDigits: 6,
-                  maximumFractionDigits: 6,
-                })}
-              </p>
+              <p className="mt-2 text-2xl font-bold">${totalVaultBalance}</p>
               <a
                 href={`https://basescan.org/address/${vaultAddress}`}
                 target="_blank"
