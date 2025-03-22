@@ -22,8 +22,6 @@ const navigation = [
   { name: "Trading Signals", href: "/dashboard/trading", icon: LineChart },
   { name: "Automation", href: "/dashboard/automation", icon: Bot },
   { name: "History", href: "/dashboard/history", icon: History },
-  { name: "Security", href: "/dashboard/security", icon: Shield },
-  { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
 export function Sidebar({ className }: SidebarProps) {
