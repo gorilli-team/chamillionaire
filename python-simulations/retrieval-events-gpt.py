@@ -1,5 +1,6 @@
 import json
 import os
+import requests
 from dotenv import find_dotenv, load_dotenv
 
 from openai import OpenAI
@@ -9,6 +10,7 @@ dotenv_path = find_dotenv()
 load_dotenv(dotenv_path)
 
 openai_api_key = os.getenv("OPENAI_API_KEY")
+backend_url = os.getenv("BACKEND_URL")
 
 client = OpenAI(api_key=openai_api_key)
 
@@ -23,10 +25,15 @@ docs: https://platform.openai.com/docs/guides/function-calling
 
 def search_kb(question: str):
     """
-    Loads all the available events from the JSON file.
+    Fetches the last 24h of token prices from the API.
     """
-    with open("./events/new-listing.json", "r") as f:
-        return json.load(f)
+    try:
+        response = requests.get(f"{backend_url}/api/token-prices/last24h")
+        response.raise_for_status()  # Raise an error for non-2xx responses
+        return response.json()
+    except requests.RequestException as e:
+        return {"error": f"Failed to fetch token prices: {str(e)}"}
+
 
 
 # --------------------------------------------------------------
@@ -118,22 +125,14 @@ completion_2 = client.beta.chat.completions.parse(
 
 final_response = completion_2.choices[0].message.parsed
 print(final_response)
-# final_response.answer
-# final_response.source
 
 # --------------------------------------------------------------
-# Question that doesn't trigger the tool
+# Step 6: Save the response to the database
 # --------------------------------------------------------------
 
-# messages = [
-#     {"role": "system", "content": system_prompt},
-#     {"role": "user", "content": "What is the weather in Tokyo?"},
-# ]
 
-# completion_3 = client.beta.chat.completions.parse(
-#     model="gpt-4o",
-#     messages=messages,
-#     tools=tools,
-# )
 
-# completion_3.choices[0].message.content
+
+
+
+
