@@ -86,6 +86,75 @@ interface Asset {
   value: number;
 }
 
+function DepositDialog({
+  isOpen,
+  onClose,
+  onConfirm,
+  asset,
+  maxAmount,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (amount: string) => void;
+  asset: Asset;
+  maxAmount: string;
+}) {
+  const [amount, setAmount] = useState(maxAmount);
+
+  if (!isOpen) return null;
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div className="bg-white rounded-2xl p-6 w-96 space-y-4 shadow-xl">
+          <h3 className="text-lg font-bold">Deposit {asset.symbol}</h3>
+          <div className="space-y-2">
+            <label className="text-sm text-black/50">Amount</label>
+            <div className="relative">
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                max={maxAmount}
+                min="0"
+                step="0.000001"
+                className="w-full p-2 border-2 border-black/10 rounded-lg bg-white"
+              />
+              <button
+                onClick={() => setAmount(maxAmount)}
+                className="absolute right-2 top-2 text-sm text-blue-500 hover:text-blue-600"
+              >
+                Max
+              </button>
+            </div>
+            <p className="text-sm text-black/50">
+              Max: {maxAmount} {asset.symbol}
+            </p>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 text-sm font-medium text-black/50 hover:text-black"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => onConfirm(amount)}
+              className="px-4 py-2 text-sm font-medium bg-green-500 text-white rounded hover:bg-green-600"
+            >
+              Confirm Deposit
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function DashboardPage() {
   const { user, authenticated, ready } = usePrivy();
   const [assets, setAssets] = useState<Asset[]>([]);
@@ -98,6 +167,8 @@ export default function DashboardPage() {
   const [vaultAddress, setVaultAddress] = useState<string | null>(null);
   const [isDepositing, setIsDepositing] = useState(false);
   const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+  const [isDepositDialogOpen, setIsDepositDialogOpen] = useState(false);
 
   const fetchBaseAssets = async () => {
     if (!ready || !authenticated || !user?.wallet?.address) {
@@ -285,7 +356,18 @@ export default function DashboardPage() {
     }
   };
 
-  const handleDeposit = async (asset: Asset) => {
+  const handleDepositClick = (asset: Asset) => {
+    setSelectedAsset(asset);
+    setIsDepositDialogOpen(true);
+  };
+
+  const handleDepositConfirm = async (amount: string) => {
+    if (!selectedAsset) return;
+    setIsDepositDialogOpen(false);
+    await handleDeposit(selectedAsset, amount);
+  };
+
+  const handleDeposit = async (asset: Asset, depositAmount: string) => {
     if (!vaultAddress || !user?.wallet?.address || asset.type === "native")
       return;
 
@@ -298,17 +380,9 @@ export default function DashboardPage() {
 
       // First approve the vault to spend tokens
       const tokenContract = new Contract(asset.address, ERC20_ABI, signer);
-      const amount = ethers.parseUnits(asset.balance, 18); // Assuming 18 decimals, should be dynamic in production
-      console.log("amount", amount);
-      //deposit only 1000000000000000000n
-      const depositAmount = ethers.parseUnits("1000000000000000000", 18);
-      console.log("vaultAddress", vaultAddress);
-      console.log("tokenContract", tokenContract);
+      const amount = ethers.parseUnits(depositAmount, 18); // Assuming 18 decimals, should be dynamic in production
 
-      const approveTx = await tokenContract.approve(
-        vaultAddress,
-        depositAmount
-      );
+      const approveTx = await tokenContract.approve(vaultAddress, amount);
       await approveTx.wait();
 
       // Now deposit into the vault
@@ -515,7 +589,7 @@ export default function DashboardPage() {
                   <AssetRow
                     key={asset.address}
                     asset={asset}
-                    handleDeposit={handleDeposit}
+                    handleDepositClick={handleDepositClick}
                     handleWithdraw={handleWithdraw}
                     isDepositing={isDepositing}
                     isWithdrawing={isWithdrawing}
@@ -526,6 +600,15 @@ export default function DashboardPage() {
             </div>
           )}
         </div>
+        {selectedAsset && (
+          <DepositDialog
+            isOpen={isDepositDialogOpen}
+            onClose={() => setIsDepositDialogOpen(false)}
+            onConfirm={handleDepositConfirm}
+            asset={selectedAsset}
+            maxAmount={selectedAsset.balance}
+          />
+        )}
       </div>
     </BaseLayout>
   );
@@ -533,14 +616,14 @@ export default function DashboardPage() {
 
 function AssetRow({
   asset,
-  handleDeposit,
+  handleDepositClick,
   handleWithdraw,
   isDepositing,
   isWithdrawing,
   hasVault,
 }: {
   asset: Asset;
-  handleDeposit: (asset: Asset) => Promise<void>;
+  handleDepositClick: (asset: Asset) => void;
   handleWithdraw: (asset: Asset) => Promise<void>;
   isDepositing: boolean;
   isWithdrawing: boolean;
@@ -573,7 +656,7 @@ function AssetRow({
         {asset.type === "erc20" && (
           <>
             <button
-              onClick={() => handleDeposit(asset)}
+              onClick={() => handleDepositClick(asset)}
               disabled={isDepositing || !hasVault}
               className="bg-green-500 text-white px-3 py-1 rounded text-sm font-medium hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
