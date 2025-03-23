@@ -10,6 +10,7 @@ export interface IUserSignal extends Document {
   txHash: string;
   eventId: number;
   motivation: string;
+  automationMessage: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -52,6 +53,9 @@ const UserSignalSchema: Schema = new Schema(
       type: Boolean,
       required: true,
       default: false,
+    },
+    automationMessage: {
+      type: String,
     },
     txHash: {
       type: String,

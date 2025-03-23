@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { BaseLayout } from "../../../components/layout/base-layout";
+import { usePrivy } from "@privy-io/react-auth";
+import { CheckIcon, X } from "lucide-react";
 
 interface Signal {
   _id: string;
@@ -13,9 +15,13 @@ interface Signal {
   motivation: string;
   createdAt: string;
   updatedAt: string;
+  wasTriggered: boolean;
+  wasRead: boolean;
+  automationMessage: string;
 }
 
 export default function TradingPage() {
+  const { user } = usePrivy();
   const [signals, setSignals] = useState<Signal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,14 +29,25 @@ export default function TradingPage() {
   useEffect(() => {
     const fetchSignals = async () => {
       try {
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/signals`
-        );
-        if (!response.ok) {
-          throw new Error("Failed to fetch signals");
+        if (!user?.wallet?.address) {
+          console.log("No address found");
+          //fetch all signals from generic endpoint
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/signals`
+          );
+          const data = await response.json();
+          setSignals(data);
+        } else {
+          console.log("Fetching signals for address:", user.wallet.address);
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user-signals/allSignals?address=${user.wallet.address}`
+          );
+          if (!response.ok) {
+            throw new Error("Failed to fetch signals");
+          }
+          const data = await response.json();
+          setSignals(data);
         }
-        const data = await response.json();
-        setSignals(data);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
@@ -140,6 +157,53 @@ export default function TradingPage() {
                   </div>
                   <div className="text-sm text-black pl-4 border-l-2 border-black/10">
                     {signal.motivation}
+                  </div>
+                  <div className="text-sm text-black pl-4 border-l-2 border-black/10">
+                    {signal.automationMessage}
+                  </div>
+                  <div className="flex gap-4 pl-4 border-l-2 border-black/10">
+                    {signal.wasTriggered !== undefined && (
+                      <div
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${
+                          signal.wasTriggered
+                            ? "bg-green-50 text-green-700 border border-green-200"
+                            : "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                        }`}
+                      >
+                        {signal.wasTriggered ? (
+                          <>
+                            <CheckIcon className="w-4 h-4" />
+                            <span>Trade Executed</span>
+                          </>
+                        ) : (
+                          <>
+                            <X className="w-4 h-4" />
+                            <span>Not Triggered</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                    {signal.wasRead !== undefined && (
+                      <div
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${
+                          signal.wasRead
+                            ? "bg-blue-50 text-blue-700 border border-blue-200"
+                            : "bg-gray-50 text-gray-700 border border-gray-200"
+                        }`}
+                      >
+                        {signal.wasRead ? (
+                          <>
+                            <CheckIcon className="w-4 h-4" />
+                            <span>Signal Reviewed</span>
+                          </>
+                        ) : (
+                          <>
+                            <X className="w-4 h-4" />
+                            <span>New Signal</span>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

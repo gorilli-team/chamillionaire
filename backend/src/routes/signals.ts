@@ -61,7 +61,19 @@ router.post("/", async (req, res) => {
             symbol,
             quantity
           );
-          await executeSwap("USDC", symbol, quantity, user.address);
+          if (user.automationEnabled) {
+            if (
+              user.automationPairs.some(
+                (pair) => pair.from === "USDC" && pair.to === symbol
+              )
+            ) {
+              await executeSwap("USDC", symbol, quantity, user.address);
+            }
+          } else {
+            userSignal.automationMessage =
+              "Automation not enabled on this account";
+            await userSignal.save();
+          }
         } catch (error) {
           console.error(`Error processing user ${user.address}:`, error);
           // Continue with other users even if one fails

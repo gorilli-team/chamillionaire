@@ -55,4 +55,31 @@ router.post("/markAsRead", async (req, res) => {
   }
 });
 
+//make an endpoint to get all signals for a user
+router.get("/allSignals", async (req, res) => {
+  try {
+    const { address } = req.query;
+    if (!address) {
+      return res.status(400).json({ error: "No address provided" });
+    }
+
+    const user = await User.findOne({
+      address: address.toString().toLowerCase(),
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const signals = await UserSignal.find({
+      user: user._id,
+    }).sort({ createdAt: -1 });
+
+    res.json(signals);
+  } catch (error) {
+    console.error("Error fetching user signals:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
