@@ -25,7 +25,7 @@ export async function executeSwap(
     console.log("Factory contract address:", process.env.FACTORY_ADDRESS);
     console.log("User address:", userAddress);
 
-    // Fetch the user’s vault
+    // Fetch the user's vault
     console.log("Checking vault for user...");
     const userVault = await factoryContract.vaults(userAddress);
     console.log("Retrieved vault address:", userVault);
@@ -44,6 +44,10 @@ export async function executeSwap(
       userVault
     );
 
+    if (!fromTokenAddress) {
+      throw new Error("Failed to get fromTokenAddress from quote");
+    }
+
     // Ensure the Vault has enough balance of the token to swap
     const fromTokenContract = new ethers.Contract(
       fromTokenAddress,
@@ -53,29 +57,97 @@ export async function executeSwap(
     const vaultBalance = await fromTokenContract.balanceOf(userVault);
     console.log("Vault balance:", vaultBalance.toString());
 
-    if (vaultBalance.lt(amount)) {
+    if (vaultBalance < amount) {
       throw new Error("Vault does not have enough balance for the swap.");
     }
 
     // Ensure the Vault has approved the 0x contract to spend its tokens
     const zeroExExchangeProxy = transaction.to; // 0x contract address
-    const allowance = await fromTokenContract.allowance(
+    let allowance = await fromTokenContract.allowance(
       userVault,
       zeroExExchangeProxy
     );
-    console.log("Allowance for 0x contract:", allowance.toString());
+    console.log("Initial allowance for 0x contract:", allowance.toString());
 
-    if (allowance.lt(amount)) {
-      throw new Error("Vault has not approved 0x for token transfer.");
+    // If allowance is 0 or less than the amount we want to swap
+    if (allowance === 0 || allowance < amount) {
+      console.log("Approving 0x contract for token transfer...");
+      const vaultContract = new ethers.Contract(userVault, VaultAbi, wallet);
+      const approveTx = await vaultContract.execute(
+        fromTokenAddress,
+        0,
+        fromTokenContract.interface.encodeFunctionData("approve", [
+          zeroExExchangeProxy,
+          ethers.MaxUint256, // Approve maximum amount
+        ])
+      );
+      console.log("Approval transaction sent:", approveTx.hash);
+      const approveReceipt = await approveTx.wait();
+      console.log(
+        "Approval transaction confirmed:",
+        approveReceipt.transactionHash
+      );
+
+      // Wait a bit for the blockchain to update
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+
+      // Check allowance again
+      allowance = await fromTokenContract.allowance(
+        userVault,
+        zeroExExchangeProxy
+      );
+      console.log("New allowance for 0x contract:", allowance.toString());
+
+      if (allowance === 0) {
+        throw new Error("Approval transaction failed to update allowance");
+      }
+    } else {
+      console.log(
+        "Vault already has sufficient allowance:",
+        allowance.toString()
+      );
     }
 
     // Execute the swap via the Vault contract
     console.log("Executing swap...");
+    console.log("Transaction parameters:", {
+      to: transaction.to,
+      value: transaction.value.toString(),
+      data: transaction.data,
+      fromTokenAddress,
+      userVault,
+      amount: amount.toString(),
+    });
+
     const vaultContract = new ethers.Contract(userVault, VaultAbi, wallet);
+
+    try {
+      // Try to estimate gas first
+      const gasEstimate = await vaultContract.execute.estimateGas(
+        transaction.to,
+        transaction.value,
+        transaction.data
+      );
+      console.log("Estimated gas:", gasEstimate.toString());
+    } catch (gasError) {
+      console.error("Gas estimation failed:", gasError);
+      // Log the full error details
+      if (gasError instanceof Error) {
+        console.error("Error details:", {
+          message: gasError.message,
+          stack: gasError.stack,
+          data: (gasError as any).data,
+        });
+      }
+      throw gasError;
+    }
+
+    console.log("Sending transaction...");
     const tx = await vaultContract.execute(
       transaction.to,
       transaction.value,
-      transaction.data
+      transaction.data,
+      { gasLimit: 500000 } // Set a reasonable gas limit
     );
 
     console.log("Transaction sent:", tx.hash);

@@ -97,5 +97,14 @@ export async function getQuote(
     throw new Error("No transaction data found");
   }
 
-  return res;
+  // Get the fromTokenAddress from our mapping
+  const fromTokenInfo = symbolToTokenInfo[fromTokenSymbol];
+  if (!fromTokenInfo) {
+    throw new Error(`Token symbol ${fromTokenSymbol} not found in mapping`);
+  }
+
+  return {
+    transaction: res.transaction,
+    fromTokenAddress: fromTokenInfo.address,
+  };
 }

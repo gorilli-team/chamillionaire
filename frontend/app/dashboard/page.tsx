@@ -59,6 +59,7 @@ const KNOWN_BASE_TOKENS = [
     symbol: "cbETH",
     priceFeed: "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70", // Using ETH price feed as an approximation
   },
+  
 ];
 
 // ETH/USD price feed for native ETH
@@ -677,7 +678,11 @@ export default function DashboardPage() {
               hour: "2-digit",
               minute: "2-digit",
             });
-            const messageText = `[${formattedDate}] ${message.motivation}`;
+            const truncatedMotivation =
+              message.motivation.length > 100
+                ? message.motivation.substring(0, 300) + "..."
+                : message.motivation;
+            const messageText = `[${formattedDate}] ${truncatedMotivation}`;
             await speak(messageText);
             await markAsRead(message._id);
           }
