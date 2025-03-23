@@ -89,4 +89,20 @@ router.get("/me", async (req, res) => {
   }
 });
 
+router.post("/settings", async (req, res) => {
+  try {
+    const { address, maxTradeSize } = req.body;
+    const user = await User.findOne({ address: address.toLowerCase() });
+    if (!user) {
+      return res.status(400).json({ error: "User not found" });
+    }
+    user.maxTradeSize = maxTradeSize;
+    await user.save();
+    res.json({ message: "Settings updated" });
+  } catch (error) {
+    console.error("Error updating settings:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;

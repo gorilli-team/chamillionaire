@@ -4,9 +4,11 @@ import React, { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { BaseLayout } from "@/components/layout/base-layout";
 import { usePrivy } from "@privy-io/react-auth";
+import { toast } from "sonner";
 
 interface UserData {
   automationEnabled: boolean;
+  maxTradeSize: number;
 }
 
 interface TradingPair {
@@ -19,6 +21,7 @@ export default function AutomationPage() {
   const [isEnabled, setIsEnabled] = React.useState(false);
   const [me, setMe] = React.useState<UserData | null>(null);
   const [tradingPairs, setTradingPairs] = React.useState<TradingPair[]>([]);
+  const [maxTradeSize, setMaxTradeSize] = React.useState(100);
   const [isAddPairDialogOpen, setIsAddPairDialogOpen] = React.useState(false);
   const [selectedFrom, setSelectedFrom] = React.useState("USDC");
   const [selectedTo, setSelectedTo] = React.useState("AAVE");
@@ -37,6 +40,7 @@ export default function AutomationPage() {
     setMe(data);
     setIsEnabled(data.automationEnabled);
     setTradingPairs(data.automationPairs);
+    setMaxTradeSize(data.maxTradeSize || 100);
   };
 
   const handleToggle = async () => {
@@ -51,6 +55,29 @@ export default function AutomationPage() {
       }),
     });
     setIsEnabled(!isEnabled);
+  };
+
+  const handleMaxTradeSizeChange = async (value: number) => {
+    setMaxTradeSize(value);
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/settings`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          address: user?.wallet?.address,
+          maxTradeSize: value,
+        }),
+      }
+    );
+
+    if (res.ok) {
+      toast.success("Max trade size updated ");
+    } else {
+      toast.error("Failed to update max trade size");
+    }
   };
 
   const handleAddPair = async () => {
@@ -158,14 +185,19 @@ export default function AutomationPage() {
                     </div>
 
                     <div>
-                      <label className="block mb-2">Max Trade Size (%)</label>
+                      <label className="block mb-2">Max Trade Size ($)</label>
                       <input
                         type="number"
-                        value="5"
+                        value={maxTradeSize}
+                        onChange={(e) =>
+                          handleMaxTradeSizeChange(Number(e.target.value))
+                        }
+                        min="0"
+                        step="0.01"
                         className="w-full rounded-lg border border-black/10 bg-white px-3 py-2"
                       />
                       <p className="mt-1 text-xs text-black/40">
-                        Maximum percentage of portfolio per trade
+                        Maximum amount in dollars per trade
                       </p>
                     </div>
 

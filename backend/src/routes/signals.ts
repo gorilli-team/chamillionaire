@@ -41,6 +41,8 @@ router.post("/", async (req, res) => {
     await Promise.all(
       users.map(async (user) => {
         try {
+
+          
           console.log("Processing user:", user.address);
           const userSignal = new UserSignal({
             user: user._id,

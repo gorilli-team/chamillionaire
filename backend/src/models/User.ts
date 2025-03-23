@@ -10,6 +10,7 @@ export interface IUser extends Document {
   address: string;
   automationEnabled: boolean;
   automationPairs: { from: AllowedToken; to: AllowedToken }[];
+  maxTradeSize: number;
   lastSignIn: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -29,6 +30,11 @@ const UserSchema: Schema = new Schema(
     automationEnabled: {
       type: Boolean,
       default: false,
+    },
+    maxTradeSize: {
+      type: Number,
+      default: 100,
+      min: 0,
     },
     automationPairs: [
       {
