@@ -101,7 +101,7 @@ export function Header({ className }: HeaderProps) {
       className={cn("h-16 px-6 flex items-center justify-between", className)}
     >
       <div className="flex items-center space-x-4">
-        <h2 className="text-lg font-semibold">Chamillionaire AI 🦎</h2>
+        <h2 className="text-lg font-semibold"></h2>
       </div>
       <div className="flex items-center space-x-4">
         {ready && authenticated ? (

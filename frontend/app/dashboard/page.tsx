@@ -34,36 +34,42 @@ const KNOWN_BASE_TOKENS = [
     name: "USD Coin",
     symbol: "USDC",
     priceFeed: "0x7e860098F58bBFC8648a4311b374B1D669a2bc6B", // USDC/USD price feed on Base
+    icon: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/assets/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913/logo.png",
   },
   {
     address: "0x4200000000000000000000000000000000000006",
     name: "Wrapped Ether",
     symbol: "WETH",
     priceFeed: "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70", // ETH/USD price feed on Base
+    icon: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/assets/0x4200000000000000000000000000000000000006/logo.png",
   },
   {
     address: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
     name: "DAI Stablecoin",
     symbol: "DAI",
     priceFeed: "0x591e79239a7d679378ec8c847e5038150364c78f", // DAI/USD price feed on Base
+    icon: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/assets/0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb/logo.png",
   },
   {
     address: "0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA",
     name: "USD Tether",
     symbol: "USDT",
     priceFeed: "0xf19d560eb8d2adf07bd6813f0e996fefd7f7998c", // USDT/USD price feed on Base
+    icon: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/assets/0xd9aAEc86B65D86f6A7B5B1b0c42FFA531710b6CA/logo.png",
   },
   {
     address: "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22",
     name: "Coinbase Wrapped Staked ETH",
     symbol: "cbETH",
     priceFeed: "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70", // Using ETH price feed as an approximation
+    icon: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/assets/0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22/logo.png",
   },
   {
     address: "0x63706e401c06ac8513145b7687A14804d17f814b",
     name: "AAVE",
     symbol: "AAVE",
     priceFeed: "0x547a514d5e3769680Ce22B2361c10Ea13619e8a9", // AAVE/USD price feed on Base
+    icon: "https://app.aave.com/icons/tokens/aave.svg",
   },
 ];
 
@@ -94,6 +100,7 @@ interface Asset {
   value: number;
   decimals?: number;
   vaultBalance?: string;
+  icon?: string;
 }
 
 function DepositDialog({
@@ -399,10 +406,11 @@ export default function DashboardPage() {
           }
 
           // Always process token if there's a vault balance, even if wallet balance is 0
+          // For AAVE, always process regardless of balance
           if (
+            token.symbol === "AAVE" ||
             balance > 0 ||
-            vaultBalance > BigInt(0) ||
-            token.symbol === "AAVE"
+            vaultBalance > BigInt(0)
           ) {
             let tokenPrice = 0;
             if (token.priceFeed) {
@@ -483,6 +491,7 @@ export default function DashboardPage() {
               value: tokenValue,
               decimals: decimals,
               vaultBalance: vaultTokenBalance,
+              icon: token.icon,
             });
           }
         } catch (tokenError) {
@@ -894,8 +903,28 @@ export default function DashboardPage() {
                     }}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-black/5 rounded-full flex items-center justify-center font-medium">
-                        {asset.symbol.charAt(0)}
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden bg-white/50">
+                        {asset.type === "native" ? (
+                          <img
+                            src="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png"
+                            alt="ETH"
+                            className="w-full h-full object-contain"
+                          />
+                        ) : asset.icon ? (
+                          <img
+                            src={asset.icon}
+                            alt={asset.symbol}
+                            className="w-full h-full object-contain"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = `https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/assets/${asset.address}/logo.png`;
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-black/5 flex items-center justify-center font-medium">
+                            {asset.symbol.charAt(0)}
+                          </div>
+                        )}
                       </div>
                       <div>
                         <p className="font-medium">{asset.symbol}</p>
