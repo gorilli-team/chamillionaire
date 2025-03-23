@@ -44,6 +44,13 @@ const KNOWN_BASE_TOKENS = [
     icon: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/assets/0x4200000000000000000000000000000000000006/logo.png",
   },
   {
+    address: "0x63706e401c06ac8513145b7687A14804d17f814b",
+    name: "AAVE",
+    symbol: "AAVE",
+    priceFeed: "0x547a514d5e3769680Ce22B2361c10Ea13619e8a9", // AAVE/USD price feed on Base
+    icon: "https://app.aave.com/icons/tokens/aave.svg",
+  },
+  {
     address: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
     name: "DAI Stablecoin",
     symbol: "DAI",
@@ -63,13 +70,6 @@ const KNOWN_BASE_TOKENS = [
     symbol: "cbETH",
     priceFeed: "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70", // Using ETH price feed as an approximation
     icon: "https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/assets/0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22/logo.png",
-  },
-  {
-    address: "0x63706e401c06ac8513145b7687A14804d17f814b",
-    name: "AAVE",
-    symbol: "AAVE",
-    priceFeed: "0x547a514d5e3769680Ce22B2361c10Ea13619e8a9", // AAVE/USD price feed on Base
-    icon: "https://app.aave.com/icons/tokens/aave.svg",
   },
 ];
 
@@ -408,7 +408,7 @@ export default function DashboardPage() {
           // Always process token if there's a vault balance, even if wallet balance is 0
           // For AAVE, always process regardless of balance
           if (
-            token.symbol === "AAVE" ||
+            // token.symbol === "AAVE" ||
             balance > 0 ||
             vaultBalance > BigInt(0)
           ) {

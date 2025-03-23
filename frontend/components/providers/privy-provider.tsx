@@ -3,6 +3,10 @@
 import { PrivyProvider } from "@privy-io/react-auth";
 import { PropsWithChildren } from "react";
 
+//Privy Provider
+//https://docs.privy.io/react-auth/react-auth-provider.
+//APPLIED FOR PRIVY BOUNTY
+
 const baseChainId = 8453;
 
 export function PrivyClientProvider({ children }: PropsWithChildren) {
