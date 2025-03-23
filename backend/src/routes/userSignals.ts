@@ -32,4 +32,27 @@ router.get("/messagesToRead", async (req, res) => {
   }
 });
 
+router.post("/markAsRead", async (req, res) => {
+  try {
+    const { signalId } = req.body;
+    if (!signalId) {
+      return res.status(400).json({ error: "No signal ID provided" });
+    }
+
+    const signal = await UserSignal.findByIdAndUpdate(
+      signalId,
+      { wasRead: true },
+      { new: true }
+    );
+    if (!signal) {
+      return res.status(404).json({ error: "Signal not found" });
+    }
+
+    res.json({ message: "Signal marked as read" });
+  } catch (error) {
+    console.error("Error marking signal as read:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
