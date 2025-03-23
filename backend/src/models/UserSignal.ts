@@ -55,7 +55,6 @@ const UserSignalSchema: Schema = new Schema(
     },
     txHash: {
       type: String,
-      required: true,
     },
     eventId: {
       type: Number,

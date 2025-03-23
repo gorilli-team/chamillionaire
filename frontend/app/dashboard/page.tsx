@@ -625,16 +625,35 @@ export default function DashboardPage() {
     fetchBaseAssets();
   }, [user?.wallet?.address, authenticated, ready, vaultAddress]);
 
-  const getUpdateMessage = () => {
-    const now = new Date();
-    const timeString = now.toLocaleTimeString();
-    return `[${timeString}] ETH is up 5% since your last visit, setting up a long entry based on the momentum indicators.`;
+  const getUpdateMessages = async () => {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user-signals/messagesToRead?address=${user?.wallet?.address}`
+    );
+    const data = await response.json();
+    console.log("data", data.length);
+    return data;
   };
 
   useEffect(() => {
-    if (authenticated) {
-      speak(getUpdateMessage());
-    }
+    const fetchMessage = async () => {
+      if (authenticated) {
+        const messages = await getUpdateMessages();
+        if (messages) {
+          messages.forEach((message: any) => {
+            const date = new Date(message.createdAt);
+            const formattedDate = date.toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            const messageText = `[${formattedDate}] ${message.motivation} ${message.symbol}`;
+            speak(messageText);
+          });
+        }
+      }
+    };
+    fetchMessage();
   }, [authenticated]);
 
   return (

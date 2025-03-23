@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import tokenPriceRoutes from "./routes/tokenPrices";
 import signalRoutes from "./routes/signals";
 import userRoutes from "./routes/users";
+import userSignalRoutes from "./routes/userSignals";
 import "./crons/prices";
 
 // Load environment variables
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use("/api/token-prices", tokenPriceRoutes);
 app.use("/api/signals", signalRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/user-signals", userSignalRoutes);
 
 // Basic route
 app.get("/", (req, res) => {
