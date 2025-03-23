@@ -158,9 +158,19 @@ export default function TradingPage() {
                   <div className="text-sm text-black pl-4 border-l-2 border-black/10">
                     {signal.motivation}
                   </div>
-                  <div className="text-sm text-black pl-4 border-l-2 border-black/10">
-                    {signal.automationMessage}
-                  </div>
+                  {signal.automationMessage && (
+                    <div className="text-sm pl-4 border-l-2 border-black/10 py-3 bg-black/[0.02] rounded-r-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+                        <span className="font-semibold text-blue-700">
+                          Automation Status
+                        </span>
+                      </div>
+                      <p className="text-black/80">
+                        {signal.automationMessage}
+                      </p>
+                    </div>
+                  )}
                   <div className="flex gap-4 pl-4 border-l-2 border-black/10">
                     {signal.wasTriggered !== undefined && (
                       <div

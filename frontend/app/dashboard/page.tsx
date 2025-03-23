@@ -399,7 +399,11 @@ export default function DashboardPage() {
           }
 
           // Always process token if there's a vault balance, even if wallet balance is 0
-          if (balance > 0 || vaultBalance > BigInt(0)) {
+          if (
+            balance > 0 ||
+            vaultBalance > BigInt(0) ||
+            token.symbol === "AAVE"
+          ) {
             let tokenPrice = 0;
             if (token.priceFeed) {
               try {
