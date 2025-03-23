@@ -18,8 +18,6 @@ export function SpeakingDialog({
   const wordGroupsRef = useRef<string[]>([]);
   const isSpeakingRef = useRef(false);
 
-  console.log("isSpeaking", isSpeaking);
-
   // Process the text into word groups (2-3 words each)
   useEffect(() => {
     if (!currentMessage) {

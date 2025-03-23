@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { BaseLayout } from "../../components/layout/base-layout";
 import { cn } from "../../lib/utils";
 import { usePrivy } from "@privy-io/react-auth";
@@ -296,6 +296,7 @@ function WithdrawDialog({
 
 export default function DashboardPage() {
   const { user, authenticated, ready } = usePrivy();
+  const messagesReadRef = useRef(false);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -626,20 +627,45 @@ export default function DashboardPage() {
   }, [user?.wallet?.address, authenticated, ready, vaultAddress]);
 
   const getUpdateMessages = async () => {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user-signals/messagesToRead?address=${user?.wallet?.address}`
-    );
-    const data = await response.json();
-    console.log("data", data.length);
-    return data;
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user-signals/messagesToRead?address=${user?.wallet?.address}`
+      );
+      const data = await response.json();
+      console.log("data", data.length);
+      return data;
+    } catch (error) {
+      console.error("Error fetching update messages:", error);
+      return [];
+    }
+  };
+
+  const markAsRead = async (signalId: string) => {
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/user-signals/markAsRead`,
+        {
+          method: "POST",
+          body: JSON.stringify({ signalId }),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const data = await response.json();
+      console.log("data", data);
+    } catch (error) {
+      console.error("Error marking signal as read:", error);
+    }
   };
 
   useEffect(() => {
     const fetchMessage = async () => {
-      if (authenticated) {
+      if (authenticated && !messagesReadRef.current) {
+        messagesReadRef.current = true;
         const messages = await getUpdateMessages();
         if (messages) {
-          messages.forEach((message: any) => {
+          for (const message of messages) {
             const date = new Date(message.createdAt);
             const formattedDate = date.toLocaleString("en-US", {
               month: "short",
@@ -648,8 +674,9 @@ export default function DashboardPage() {
               minute: "2-digit",
             });
             const messageText = `[${formattedDate}] ${message.motivation} ${message.symbol}`;
-            speak(messageText);
-          });
+            await speak(messageText);
+            await markAsRead(message._id);
+          }
         }
       }
     };
