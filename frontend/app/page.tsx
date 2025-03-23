@@ -40,14 +40,13 @@ export default function Home() {
             <p className="mb-8 text-lg text-gray-200 max-w-3xl mx-auto">
               An AI-powered, privacy-first trading assistant that helps users
               analyze market trends, optimize their strategies, and execute
-              trades autonomously—all while keeping their data secure with
-              Nillion's SecretVault.
+              trades autonomously—all while keeping their data secure.
             </p>
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               <FeatureCard
                 title="AI-Powered Insights"
-                description="Uses AI models (SecretLLM) to analyze past trades and suggest optimal strategies"
+                description="Uses AI models to analyze past trades and suggest optimal strategies"
                 icon={<AnalyticsIcon />}
               />
               <FeatureCard
@@ -57,7 +56,7 @@ export default function Home() {
               />
               <FeatureCard
                 title="Privacy-First"
-                description="Nillion's SecretVault ensures that no third party can access or misuse your trade data"
+                description="Your trade data is kept secure and private with cutting-edge encryption."
                 icon={<PrivacyIcon />}
               />
               <FeatureCard
@@ -86,9 +85,6 @@ export default function Home() {
             <div className="flex flex-wrap justify-center gap-3">
               <TechBadge text="React + Next.js" />
               <TechBadge text="Node.js" />
-              <TechBadge text="Nillion SecretVault" />
-              <TechBadge text="SecretLLM" />
-              <TechBadge text="AgentKit" />
               <TechBadge text="Privy" />
             </div>
           </div>
