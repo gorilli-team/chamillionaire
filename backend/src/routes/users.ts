@@ -53,6 +53,23 @@ router.post("/automation", async (req, res) => {
   }
 });
 
+router.post("/automation/pairs", async (req, res) => {
+  try {
+    console.log("req.body", req.body);
+    const { address, pairs } = req.body;
+    const user = await User.findOne({ address: address.toLowerCase() });
+    if (!user) {
+      return res.status(400).json({ error: "User not found" });
+    }
+    user.automationPairs = pairs;
+    await user.save();
+    res.json({ message: "Automation pairs updated" });
+  } catch (error) {
+    console.error("Error updating automation pairs:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.get("/me", async (req, res) => {
   try {
     console.log("-me: req.query", req.query);

@@ -9,10 +9,20 @@ interface UserData {
   automationEnabled: boolean;
 }
 
+interface TradingPair {
+  from: string;
+  to: string;
+}
+
 export default function AutomationPage() {
   const { user, authenticated, ready } = usePrivy();
   const [isEnabled, setIsEnabled] = React.useState(false);
   const [me, setMe] = React.useState<UserData | null>(null);
+  const [tradingPairs, setTradingPairs] = React.useState<TradingPair[]>([]);
+  const [isAddPairDialogOpen, setIsAddPairDialogOpen] = React.useState(false);
+  const [selectedFrom, setSelectedFrom] = React.useState("USDC");
+  const [selectedTo, setSelectedTo] = React.useState("AAVE");
+
   useEffect(() => {
     fetchMe();
   }, [user?.wallet?.address, authenticated, ready]);
@@ -26,6 +36,7 @@ export default function AutomationPage() {
     const data = await res.json();
     setMe(data);
     setIsEnabled(data.automationEnabled);
+    setTradingPairs(data.automationPairs);
   };
 
   const handleToggle = async () => {
@@ -40,6 +51,24 @@ export default function AutomationPage() {
       }),
     });
     setIsEnabled(!isEnabled);
+  };
+
+  const handleAddPair = async () => {
+    await fetch(
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/users/automation/pairs`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          address: user?.wallet?.address,
+          pairs: [...tradingPairs, { from: selectedFrom, to: selectedTo }],
+        }),
+      }
+    );
+    setTradingPairs([...tradingPairs, { from: selectedFrom, to: selectedTo }]);
+    setIsAddPairDialogOpen(false);
   };
 
   return (
@@ -143,13 +172,18 @@ export default function AutomationPage() {
                     <div>
                       <label className="block mb-2">Trading Pairs</label>
                       <div className="flex gap-2">
-                        <span className="rounded-lg bg-black px-3 py-1.5 text-sm text-white">
-                          BTC/USDT
-                        </span>
-                        <span className="rounded-lg bg-black px-3 py-1.5 text-sm text-white">
-                          ETH/USDT
-                        </span>
-                        <button className="rounded-lg border border-black/10 px-3 py-1.5 text-sm">
+                        {tradingPairs.map((pair, index) => (
+                          <span
+                            key={index}
+                            className="rounded-lg bg-black px-3 py-1.5 text-sm text-white"
+                          >
+                            {pair.from}/{pair.to}
+                          </span>
+                        ))}
+                        <button
+                          onClick={() => setIsAddPairDialogOpen(true)}
+                          className="rounded-lg border border-black/10 px-3 py-1.5 text-sm hover:bg-black/5"
+                        >
                           +
                         </button>
                       </div>
@@ -158,28 +192,68 @@ export default function AutomationPage() {
                       </p>
                     </div>
 
-                    {/* <div>
-                      <label className="block mb-2">Execution Method</label>
-                      <div className="space-y-2">
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name="execution"
-                            checked
-                            className="h-4 w-4"
-                          />
-                          <span>Require Approval</span>
-                        </label>
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="radio"
-                            name="execution"
-                            className="h-4 w-4"
-                          />
-                          <span>Fully Automatic</span>
-                        </label>
-                      </div>
-                    </div> */}
+                    {/* Add Trading Pair Dialog */}
+                    {isAddPairDialogOpen && (
+                      <>
+                        <div
+                          className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+                          onClick={() => setIsAddPairDialogOpen(false)}
+                        />
+                        <div className="fixed inset-0 flex items-center justify-center z-50">
+                          <div className="bg-white rounded-2xl p-6 w-96 space-y-4 shadow-xl">
+                            <h3 className="text-lg font-bold">
+                              Add Trading Pair
+                            </h3>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="text-sm text-black/50">
+                                  From Token
+                                </label>
+                                <select
+                                  value={selectedFrom}
+                                  onChange={(e) =>
+                                    setSelectedFrom(e.target.value)
+                                  }
+                                  className="w-full p-2 border-2 border-black/10 rounded-lg bg-white"
+                                >
+                                  <option value="USDC">USDC</option>
+                                  <option value="AAVE">AAVE</option>
+                                </select>
+                              </div>
+                              <div>
+                                <label className="text-sm text-black/50">
+                                  To Token
+                                </label>
+                                <select
+                                  value={selectedTo}
+                                  onChange={(e) =>
+                                    setSelectedTo(e.target.value)
+                                  }
+                                  className="w-full p-2 border-2 border-black/10 rounded-lg bg-white"
+                                >
+                                  <option value="USDC">USDC</option>
+                                  <option value="AAVE">AAVE</option>
+                                </select>
+                              </div>
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                onClick={() => setIsAddPairDialogOpen(false)}
+                                className="px-4 py-2 text-sm font-medium text-black/50 hover:text-black"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={handleAddPair}
+                                className="px-4 py-2 text-sm font-medium bg-black text-white rounded hover:bg-black/90"
+                              >
+                                Add Pair
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
