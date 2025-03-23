@@ -2,6 +2,7 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface IUser extends Document {
   address: string;
+  automationEnabled: boolean;
   lastSignIn: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -17,6 +18,10 @@ const UserSchema: Schema = new Schema(
     },
     lastSignIn: {
       type: Date,
+    },
+    automationEnabled: {
+      type: Boolean,
+      default: false,
     },
   },
   {
