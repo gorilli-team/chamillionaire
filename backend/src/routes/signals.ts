@@ -52,8 +52,8 @@ router.post("/", async (req, res) => {
       users.map(async (user) => {
         try {
           //get quantity from user settings
-          const tokenFrom = "USDC";
-          const tokenTo = symbol;
+          const tokenFrom = signal === "BUY" ? "USDC" : symbol;
+          const tokenTo = signal === "BUY" ? symbol : "USDC";
 
           const maxTradeSize = user?.maxTradeSize;
 
@@ -61,6 +61,7 @@ router.post("/", async (req, res) => {
 
           // Get token price from DefiLlama
           let price = 0;
+
           try {
             const priceData = await getTokenPrice(tokenFrom);
             price = priceData.currentPrice;
@@ -94,12 +95,21 @@ router.post("/", async (req, res) => {
                 (pair) => pair.from === "USDC" && pair.to === symbol
               )
             ) {
-              await executeSwap(
-                "USDC",
-                symbol,
+              const message = await executeSwap(
+                tokenFrom,
+                tokenTo,
                 userSignal.quantity,
                 user.address
               );
+              if (message) {
+                userSignal.automationMessage = `Swap executed successfully for ${userSignal.quantity} ${symbol} at ${price} USD`;
+                userSignal.wasTriggered = true;
+                await userSignal.save();
+              } else {
+                userSignal.automationMessage = "Swap executed";
+                userSignal.wasTriggered = true;
+                await userSignal.save();
+              }
             } else {
               userSignal.automationMessage =
                 "Automation not enabled on this token pair";
