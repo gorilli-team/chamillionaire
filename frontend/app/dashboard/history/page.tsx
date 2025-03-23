@@ -62,6 +62,14 @@ const KNOWN_BASE_TOKENS = [
 // ETH/USD price feed for native ETH
 const ETH_USD_PRICE_FEED = "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70";
 
+// Add VaultFactory ABI
+const VAULT_FACTORY_ABI = [
+  "function createVault() external returns (address)",
+  "function vaults(address owner) view returns (address)",
+];
+
+const VAULT_FACTORY_ADDRESS = "0x7f9476fB4d637045dF62fdC27230fD9784D11Ad2";
+
 interface Asset {
   name: string;
   symbol: string;
@@ -92,7 +100,36 @@ export default function HistoryPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const walletAddress = user?.wallet?.address?.toLowerCase() || "";
+  const [hasVault, setHasVault] = useState(false);
+  const [vaultAddress, setVaultAddress] = useState<string | null>(null);
+
+  // Check if user has a vault
+  useEffect(() => {
+    const checkVault = async () => {
+      if (!ready || !authenticated || !user?.wallet?.address) return;
+
+      try {
+        const provider = new ethers.JsonRpcProvider(BASE_RPC_URL);
+        const vaultFactory = new ethers.Contract(
+          VAULT_FACTORY_ADDRESS,
+          VAULT_FACTORY_ABI,
+          provider
+        );
+
+        const vault = await vaultFactory.vaults(user.wallet.address);
+        const hasExistingVault =
+          vault !== "0x0000000000000000000000000000000000000000";
+        setHasVault(hasExistingVault);
+        if (hasExistingVault) {
+          setVaultAddress(vault);
+        }
+      } catch (err) {
+        console.error("Error checking vault:", err);
+      }
+    };
+
+    checkVault();
+  }, [user?.wallet?.address, authenticated, ready]);
 
   useEffect(() => {
     const fetchBaseAssets = async () => {
@@ -232,7 +269,7 @@ export default function HistoryPage() {
 
   useEffect(() => {
     const fetchTransactions = async () => {
-      if (!ready || !authenticated || !walletAddress) {
+      if (!ready || !authenticated || !vaultAddress) {
         setLoading(false);
         return;
       }
@@ -241,7 +278,7 @@ export default function HistoryPage() {
         setLoading(true);
 
         const API_KEY = process.env.NEXT_PUBLIC_BASESCAN_API_KEY;
-        const BASESCAN_URL = `https://api.basescan.org/api?module=account&action=txlist&address=${walletAddress}&startblock=0&endblock=99999999&sort=desc&apikey=${API_KEY}`;
+        const BASESCAN_URL = `https://api.basescan.org/api?module=account&action=txlist&address=${vaultAddress}&startblock=0&endblock=99999999&sort=desc&apikey=${API_KEY}`;
 
         const response = await fetch(BASESCAN_URL);
         const data = await response.json();
@@ -257,8 +294,6 @@ export default function HistoryPage() {
           value: ethers.formatEther(tx.value),
           timestamp: parseInt(tx.timeStamp, 10) * 1000, // Convert Unix timestamp to milliseconds
         }));
-
-        console.log("Formatted Transactions:", formattedTxs);
 
         // Update transactions state
         setTransactions((prev) =>
@@ -277,7 +312,7 @@ export default function HistoryPage() {
     };
 
     fetchTransactions();
-  }, [walletAddress, authenticated, ready, currentPage]);
+  }, [vaultAddress, authenticated, ready, currentPage]);
 
   const loadMore = () => {
     setCurrentPage((prev) => prev + 1);
@@ -290,7 +325,7 @@ export default function HistoryPage() {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold tracking-tight">
-              Transaction History
+              AI Escrow History
             </h2>
             <div className="bg-[rgb(0,82,255)] backdrop-blur-sm px-4 py-1 rounded-full">
               <span className="text-sm font-semibold text-white">
@@ -329,7 +364,6 @@ export default function HistoryPage() {
               >
                 <div>Transaction</div>
                 <div>From/To</div>
-                <div className="text-right">Amount (ETH)</div>
                 <div className="text-right">Time</div>
                 <div className="text-right">Link</div>
               </div>
@@ -347,7 +381,7 @@ export default function HistoryPage() {
                       </span>
                     </div>
                     <div className="font-mono truncate pr-4">
-                      {tx.from.toLowerCase() === walletAddress ? (
+                      {tx.from.toLowerCase() === vaultAddress ? (
                         <div className="flex items-center space-x-2">
                           <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0"></span>
                           <span className="truncate">
@@ -358,14 +392,15 @@ export default function HistoryPage() {
                         <div className="flex items-center space-x-2">
                           <span className="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></span>
                           <span className="truncate">
-                            From: {tx.from.slice(0, 8)}...{tx.from.slice(-6)}
+                            From: {tx.from.slice(0, 8)}...
+                            {tx.from.slice(-6)}
                           </span>
                         </div>
                       )}
                     </div>
-                    <div className="text-right font-mono">
+                    {/* <div className="text-right font-mono">
                       {parseFloat(tx.value).toFixed(6)}
-                    </div>
+                    </div> */}
                     <div className="text-right text-black/50 font-medium">
                       {formatDistanceToNow(tx.timestamp, {
                         addSuffix: true,

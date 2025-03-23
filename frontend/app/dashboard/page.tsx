@@ -755,7 +755,7 @@ export default function DashboardPage() {
                 onClick={createVault}
                 disabled={isCreatingVault || !authenticated}
               >
-                {isCreatingVault ? "Creating..." : "Create AI Vault"}
+                {isCreatingVault ? "Creating..." : "Create AI Escrow"}
                 {!isCreatingVault && (
                   <svg
                     width="12"
@@ -793,7 +793,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="bg-white/50 backdrop-blur-xl shadow-sm rounded-2xl p-6 hover:bg-white/60 transition-all border-2 border-black/5 hover:border-black/10">
-              <p className="text-sm text-black/50">AI Vault Balance</p>
+              <p className="text-sm text-black/50">AI Escrow Balance</p>
               <p className="mt-2 text-2xl font-bold">${totalVaultBalance}</p>
               <a
                 href={`https://basescan.org/address/${vaultAddress}`}
@@ -872,7 +872,7 @@ export default function DashboardPage() {
               >
                 <div>Asset</div>
                 <div className="text-right">Balance in Wallet</div>
-                <div className="text-right">Balance in AI Vault</div>
+                <div className="text-right">Balance in AI Escrow</div>
                 <div className="text-right">Price</div>
                 <div className="text-right">Total Value</div>
                 <div className="text-right">Deposit</div>
