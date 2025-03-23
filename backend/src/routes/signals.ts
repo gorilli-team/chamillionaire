@@ -3,6 +3,16 @@ import { SignalData } from "../models/SignalData";
 import { UserSignal } from "../models/UserSignal";
 import { User } from "../models/User";
 import { executeSwap } from "../services/ContractExecution";
+import { getTokenPrice } from "../services/PriceFeed";
+
+interface DefiLlamaResponse {
+  coins: {
+    [key: string]: {
+      prices: { price: number }[];
+    };
+  };
+}
+
 const router = express.Router();
 
 // Create a new signal
@@ -41,14 +51,35 @@ router.post("/", async (req, res) => {
     await Promise.all(
       users.map(async (user) => {
         try {
+          //get quantity from user settings
+          const tokenFrom = "USDC";
+          const tokenTo = symbol;
 
-          
+          const maxTradeSize = user?.maxTradeSize;
+
+          console.log("maxTradeSize in dollars:", maxTradeSize);
+
+          // Get token price from DefiLlama
+          let price = 0;
+          try {
+            const priceData = await getTokenPrice(tokenFrom);
+            price = priceData.currentPrice;
+          } catch (error) {
+            console.error(`Error fetching price for ${symbol}:`, error);
+            // Use fallback prices for known tokens
+            if (symbol === "AAVE") price = 185;
+            else if (["USDC", "USDT", "DAI"].includes(symbol)) price = 1;
+            else if (symbol === "WETH") price = 1900;
+          }
+
+          const totalTradeSize = maxTradeSize / price;
+
           console.log("Processing user:", user.address);
           const userSignal = new UserSignal({
             user: user._id,
             signal: signal,
             symbol: symbol,
-            quantity: quantity,
+            quantity: Math.min(totalTradeSize, quantity),
             confidenceScore: confidenceScore,
             eventId: eventId,
             motivation: motivation,
@@ -56,20 +87,23 @@ router.post("/", async (req, res) => {
           await userSignal.save();
 
           //execute swap
-          console.log(
-            "Executing swap for user:",
-            user.address,
-            "USDC",
-            symbol,
-            quantity
-          );
+          console.log("Executing swap for user:", user.address, "USDC", symbol);
           if (user.automationEnabled) {
             if (
               user.automationPairs.some(
                 (pair) => pair.from === "USDC" && pair.to === symbol
               )
             ) {
-              await executeSwap("USDC", symbol, quantity, user.address);
+              await executeSwap(
+                "USDC",
+                symbol,
+                userSignal.quantity,
+                user.address
+              );
+            } else {
+              userSignal.automationMessage =
+                "Automation not enabled on this token pair";
+              await userSignal.save();
             }
           } else {
             userSignal.automationMessage =
