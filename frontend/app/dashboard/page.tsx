@@ -59,7 +59,12 @@ const KNOWN_BASE_TOKENS = [
     symbol: "cbETH",
     priceFeed: "0x71041dddad3595F9CEd3DcCFBe3D1F4b0a16Bb70", // Using ETH price feed as an approximation
   },
-  
+  {
+    address: "0x63706e401c06ac8513145b7687A14804d17f814b",
+    name: "AAVE",
+    symbol: "AAVE",
+    priceFeed: "0x547a514d5e3769680Ce22B2361c10Ea13619e8a9", // AAVE/USD price feed on Base
+  },
 ];
 
 // ETH/USD price feed for native ETH
@@ -420,6 +425,23 @@ export default function DashboardPage() {
                   tokenPrice = ethPrice;
                 } else if (token.symbol === "cbETH") {
                   tokenPrice = ethPrice * 1.05;
+                } else if (token.symbol === "AAVE") {
+                  try {
+                    // Fetch AAVE price from DefiLlama
+                    const response = await fetch(
+                      `https://coins.llama.fi/chart/base:${token.address}?span=1&period=1h`
+                    );
+                    const data = await response.json();
+                    const prices = data.coins[`base:${token.address}`].prices;
+                    tokenPrice = prices[prices.length - 1].price;
+                    console.log("AAVE price from DefiLlama:", tokenPrice);
+                  } catch (defiLlamaError) {
+                    console.error(
+                      "Error fetching AAVE price from DefiLlama:",
+                      defiLlamaError
+                    );
+                    tokenPrice = 185; // Fallback price
+                  }
                 }
               }
             }
