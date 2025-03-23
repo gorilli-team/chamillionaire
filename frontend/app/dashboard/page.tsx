@@ -526,7 +526,11 @@ export default function DashboardPage() {
 
       // Create vault transaction
       const tx = await vaultFactory.createVault();
-      await tx.wait();
+      const receipt = await tx.wait();
+
+      // Get the new vault address
+      const vault = await vaultFactory.vaults(user.wallet.address);
+      setVaultAddress(vault);
 
       // Update vault status
       setHasVault(true);

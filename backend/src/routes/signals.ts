@@ -2,67 +2,78 @@ import express from "express";
 import { SignalData } from "../models/SignalData";
 import { UserSignal } from "../models/UserSignal";
 import { User } from "../models/User";
+import { executeSwap } from "../services/ContractExecution";
 const router = express.Router();
 
 // Create a new signal
 router.post("/", async (req, res) => {
-  const { signal, symbol, quantity, confidenceScore, eventId, motivation } =
-    req.body;
+  try {
+    const { signal, symbol, quantity, confidenceScore, eventId, motivation } =
+      req.body;
 
-  if (
-    !signal ||
-    !symbol ||
-    !quantity ||
-    !confidenceScore ||
-    !eventId ||
-    !motivation
-  ) {
-    return res.status(400).json({ message: "Missing required fields" });
-  }
+    if (
+      !signal ||
+      !symbol ||
+      !quantity ||
+      !confidenceScore ||
+      !eventId ||
+      !motivation
+    ) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
 
-  console.log("Received signal:", req.body);
+    console.log("Received signal:", req.body);
 
-  const signalData = new SignalData({
-    signal,
-    symbol,
-    quantity,
-    confidenceScore,
-    eventId,
-    motivation,
-  });
-  await signalData.save();
-
-  /*
-  Create a new user signal for each user  signal: string;
-  symbol: string;
-  quantity: number;
-  confidenceScore: number;
-  wasRead: boolean;
-  wasTriggered: boolean;
-  txHash: string;
-  eventId: number;
-  motivation: string;
-  createdAt: Date;
-  updatedAt: Date;
-  */
-
-  //get all users
-  const users = await User.find();
-  users.forEach(async (user) => {
-    console.log("user", user);
-    const userSignal = new UserSignal({
-      user: user._id,
-      signal: signal,
-      symbol: symbol,
-      quantity: quantity,
-      confidenceScore: confidenceScore,
-      eventId: eventId,
-      motivation: motivation,
+    const signalData = new SignalData({
+      signal,
+      symbol,
+      quantity,
+      confidenceScore,
+      eventId,
+      motivation,
     });
-    await userSignal.save();
-  });
+    await signalData.save();
 
-  res.status(201).json(signalData);
+    //get all users
+    const users = await User.find();
+
+    // Process all users in parallel with proper error handling
+    await Promise.all(
+      users.map(async (user) => {
+        try {
+          console.log("Processing user:", user.address);
+          const userSignal = new UserSignal({
+            user: user._id,
+            signal: signal,
+            symbol: symbol,
+            quantity: quantity,
+            confidenceScore: confidenceScore,
+            eventId: eventId,
+            motivation: motivation,
+          });
+          await userSignal.save();
+
+          //execute swap
+          console.log(
+            "Executing swap for user:",
+            user.address,
+            "USDC",
+            symbol,
+            quantity
+          );
+          await executeSwap("USDC", symbol, quantity, user.address);
+        } catch (error) {
+          console.error(`Error processing user ${user.address}:`, error);
+          // Continue with other users even if one fails
+        }
+      })
+    );
+
+    res.status(201).json(signalData);
+  } catch (error) {
+    console.error("Error creating signal:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
 });
 
 // Get all signals
