@@ -673,7 +673,7 @@ export default function DashboardPage() {
               hour: "2-digit",
               minute: "2-digit",
             });
-            const messageText = `[${formattedDate}] ${message.motivation} ${message.symbol}`;
+            const messageText = `[${formattedDate}] ${message.motivation}`;
             await speak(messageText);
             await markAsRead(message._id);
           }
